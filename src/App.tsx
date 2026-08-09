@@ -98,26 +98,31 @@ function App() {
             />
 
             <div className="space-y-4">
-              {[
-                ['Stocks', 'Rp 10.500.000', '57.7%'],
-                ['Crypto', 'Rp 4.200.000', '23.1%'],
-                ['Cash', 'Rp 2.500.000', '13.7%'],
-                ['Other', 'Rp 1.000.000', '5.5%'],
-              ].map(([name, value, percentage]) => (
-                <div
-                  key={name}
-                  className="flex items-center justify-between border-b border-border pb-3 last:border-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{name}</p>
-                    <p className="text-xs text-text-muted">{percentage}</p>
-                  </div>
+              {portfolioAssets.map((asset) => {
+                const total = portfolioAssets.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                );
+                const percentage = (asset.value / total) * 100;
 
-                  <p className="text-sm font-semibold tabular-nums">
-                    {value}
-                  </p>
-                </div>
-              ))}
+                return (
+                  <div
+                    key={asset.id}
+                    className="flex items-center justify-between border-b border-border pb-3 last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{asset.name}</p>
+                      <p className="text-xs text-text-muted">
+                        {percentage.toFixed(1)}%
+                      </p>
+                    </div>
+
+                    <p className="text-sm font-semibold tabular-nums">
+                      Rp {asset.value.toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </Card>
 
