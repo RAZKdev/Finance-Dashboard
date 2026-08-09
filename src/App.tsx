@@ -1,119 +1,171 @@
+import { useState } from 'react';
 import {
   Badge,
   Button,
   Card,
   Input,
   SectionHeader,
-  Skeleton,
   StatCard,
 } from './components/ui';
 
-import './App.css';
-
 function App() {
+  const [activeTab, setActiveTab] = useState('Overview');
+
+  const tabs = ['Overview', 'Portfolio', 'Markets', 'Transactions'];
+
   return (
-    <main className="min-h-screen bg-background text-text-primary p-6">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <div className="min-h-screen bg-background text-text-primary">
+      <header className="border-b border-border bg-surface">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <div>
+            <h1 className="text-xl font-semibold">Finance Dashboard</h1>
+            <p className="text-xs text-text-muted">
+              Personal finance overview
+            </p>
+          </div>
+
+          <Badge variant="positive">Market Open</Badge>
+        </div>
+      </header>
+
+      <nav className="border-b border-border bg-surface">
+        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                activeTab === tab
+                  ? 'border-premium text-text-primary'
+                  : 'border-transparent text-text-muted hover:text-text-primary'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
         <SectionHeader
-          title="Finance Dashboard"
-          description="Personal finance overview"
+          title={activeTab}
+          description="Track your financial position and portfolio performance."
           action={
-            <Button size="sm">
-              Add Transaction
+            <Button size="sm" onClick={() => alert('Add transaction')}>
+              + Add
             </Button>
           }
         />
 
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Total Balance"
-            value="$24,580"
+            value="Rp 25.450.000"
             change="+8.4%"
             trend="up"
           />
 
           <StatCard
-            label="Income"
-            value="$8,420"
-            change="+12.5%"
+            label="Portfolio"
+            value="Rp 18.200.000"
+            change="+5.7%"
             trend="up"
           />
 
           <StatCard
-            label="Expenses"
-            value="$3,240"
+            label="Monthly Income"
+            value="Rp 7.500.000"
+            change="+12.1%"
+            trend="up"
+          />
+
+          <StatCard
+            label="Monthly Expense"
+            value="Rp 3.250.000"
             change="-4.2%"
             trend="down"
           />
+        </section>
 
-          <StatCard
-            label="Savings"
-            value="$5,180"
-            change="+6.8%"
-            trend="up"
-          />
+        <section className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <SectionHeader
+              title="Portfolio Overview"
+              description="Current allocation across your assets."
+            />
+
+            <div className="space-y-4">
+              {[
+                ['Stocks', 'Rp 10.500.000', '57.7%'],
+                ['Crypto', 'Rp 4.200.000', '23.1%'],
+                ['Cash', 'Rp 2.500.000', '13.7%'],
+                ['Other', 'Rp 1.000.000', '5.5%'],
+              ].map(([name, value, percentage]) => (
+                <div
+                  key={name}
+                  className="flex items-center justify-between border-b border-border pb-3 last:border-0"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{name}</p>
+                    <p className="text-xs text-text-muted">{percentage}</p>
+                  </div>
+
+                  <p className="text-sm font-semibold tabular-nums">
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <SectionHeader
+              title="Recent Transactions"
+              description="Latest activity in your account."
+            />
+
+            <div className="space-y-4">
+              {[
+                ['Salary', '+ Rp 7.500.000', 'positive'],
+                ['Investment', '- Rp 2.000.000', 'negative'],
+                ['Food', '- Rp 150.000', 'negative'],
+                ['Freelance', '+ Rp 750.000', 'positive'],
+              ].map(([name, amount, type]) => (
+                <div
+                  key={name}
+                  className="flex items-center justify-between border-b border-border pb-3 last:border-0"
+                >
+                  <p className="text-sm font-medium">{name}</p>
+
+                  <Badge
+                    variant={type === 'positive' ? 'positive' : 'negative'}
+                  >
+                    {amount}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </Card>
         </section>
 
         <Card>
           <SectionHeader
-            title="Quick Actions"
-            description="Manage your financial data"
+            title="Quick Search"
+            description="Search your financial records."
           />
 
-          <div className="flex flex-wrap gap-3">
-            <Button>Add Income</Button>
-            <Button variant="secondary">Add Expense</Button>
-            <Button variant="ghost">View Reports</Button>
-            <Button variant="danger">Delete Data</Button>
-          </div>
-        </Card>
-
-        <Card>
-          <SectionHeader
-            title="Transaction Search"
-            description="Search your financial records"
-          />
-
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Input
               placeholder="Search transactions..."
               className="flex-1"
             />
 
-            <Button>
-              Search
-            </Button>
+            <Button variant="secondary">Search</Button>
           </div>
         </Card>
-
-        <Card>
-          <SectionHeader
-            title="Account Status"
-            description="Current dashboard state"
-          />
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge variant="positive">
-              Connected
-            </Badge>
-
-            <Badge variant="warning">
-              Demo Data
-            </Badge>
-
-            <Badge variant="premium">
-              Premium
-            </Badge>
-
-            <Badge variant="negative">
-              Alert
-            </Badge>
-
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </Card>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
