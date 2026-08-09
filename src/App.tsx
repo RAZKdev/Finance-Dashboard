@@ -9,6 +9,7 @@ import {
 } from './components/ui';
 import { TransactionList } from './components/transactions';
 import { transactions } from './data/transactions';
+import { portfolioAssets } from './data/portfolio';
 
 function App() {
   const [activeTab, setActiveTab] = useState('Overview');
