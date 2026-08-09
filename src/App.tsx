@@ -7,6 +7,8 @@ import {
   SectionHeader,
   StatCard,
 } from './components/ui';
+import { TransactionList } from './components/transactions';
+import { transactions } from './data/transactions';
 
 function App() {
   const [activeTab, setActiveTab] = useState('Overview');
@@ -125,27 +127,7 @@ function App() {
               description="Latest activity in your account."
             />
 
-            <div className="space-y-4">
-              {[
-                ['Salary', '+ Rp 7.500.000', 'positive'],
-                ['Investment', '- Rp 2.000.000', 'negative'],
-                ['Food', '- Rp 150.000', 'negative'],
-                ['Freelance', '+ Rp 750.000', 'positive'],
-              ].map(([name, amount, type]) => (
-                <div
-                  key={name}
-                  className="flex items-center justify-between border-b border-border pb-3 last:border-0"
-                >
-                  <p className="text-sm font-medium">{name}</p>
-
-                  <Badge
-                    variant={type === 'positive' ? 'positive' : 'negative'}
-                  >
-                    {amount}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+            <TransactionList transactions={transactions} />
           </Card>
         </section>
 
