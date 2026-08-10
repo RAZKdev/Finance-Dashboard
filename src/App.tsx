@@ -6,6 +6,7 @@ import {
   SectionHeader,
 } from './components/ui';
 import { TransactionList } from './components/transactions';
+import { Navigation } from './components/navigation';
 import { DashboardStats } from './components/dashboard';
 import { PortfolioList } from './components/portfolio';
 import { QuickSearch } from './components/search';
@@ -14,8 +15,6 @@ import { portfolioAssets } from './data/portfolio';
 
 function App() {
   const [activeTab, setActiveTab] = useState('Overview');
-
-  const tabs = ['Overview', 'Portfolio', 'Markets', 'Transactions'];
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
@@ -32,24 +31,10 @@ function App() {
         </div>
       </header>
 
-      <nav className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'border-premium text-text-primary'
-                  : 'border-transparent text-text-muted hover:text-text-primary'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </nav>
+      <Navigation
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
       <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
         <SectionHeader
