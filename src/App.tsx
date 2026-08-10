@@ -16,6 +16,73 @@ import { portfolioAssets } from './data/portfolio';
 function App() {
   const [activeTab, setActiveTab] = useState('Overview');
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'Portfolio':
+        return (
+          <Card>
+            <SectionHeader
+              title="Portfolio"
+              description="Current allocation across your assets."
+            />
+            <PortfolioList assets={portfolioAssets} />
+          </Card>
+        );
+
+      case 'Transactions':
+        return (
+          <Card>
+            <SectionHeader
+              title="Transactions"
+              description="Latest activity in your account."
+            />
+            <TransactionList transactions={transactions} />
+          </Card>
+        );
+
+      case 'Markets':
+        return (
+          <Card>
+            <SectionHeader
+              title="Markets"
+              description="Market data will be available here."
+            />
+            <div className="py-8 text-center text-sm text-text-muted">
+              Market data is not available yet.
+            </div>
+          </Card>
+        );
+
+      case 'Overview':
+      default:
+        return (
+          <>
+            <DashboardStats />
+
+            <section className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <SectionHeader
+                  title="Portfolio Overview"
+                  description="Current allocation across your assets."
+                />
+                <PortfolioList assets={portfolioAssets} />
+              </Card>
+
+              <Card>
+                <SectionHeader
+                  title="Recent Transactions"
+                  description="Latest activity in your account."
+                />
+                <TransactionList transactions={transactions} />
+              </Card>
+            </section>
+
+            <QuickSearch />
+          </>
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-text-primary">
       <header className="border-b border-border bg-surface">
@@ -47,29 +114,7 @@ function App() {
           }
         />
 
-        <DashboardStats />
-
-        <section className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <SectionHeader
-              title="Portfolio Overview"
-              description="Current allocation across your assets."
-            />
-
-            <PortfolioList assets={portfolioAssets} />
-          </Card>
-
-          <Card>
-            <SectionHeader
-              title="Recent Transactions"
-              description="Latest activity in your account."
-            />
-
-            <TransactionList transactions={transactions} />
-          </Card>
-        </section>
-
-        <QuickSearch />
+        {renderTabContent()}
       </main>
     </div>
   );
