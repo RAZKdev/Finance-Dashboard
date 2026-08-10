@@ -7,6 +7,7 @@ import {
 } from './components/ui';
 import { TransactionList } from './components/transactions';
 import { DashboardStats } from './components/dashboard';
+import { PortfolioList } from './components/portfolio';
 import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
@@ -70,33 +71,7 @@ function App() {
               description="Current allocation across your assets."
             />
 
-            <div className="space-y-4">
-              {portfolioAssets.map((asset) => {
-                const total = portfolioAssets.reduce(
-                  (sum, item) => sum + item.value,
-                  0
-                );
-                const percentage = (asset.value / total) * 100;
-
-                return (
-                  <div
-                    key={asset.id}
-                    className="flex items-center justify-between border-b border-border pb-3 last:border-0"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{asset.name}</p>
-                      <p className="text-xs text-text-muted">
-                        {percentage.toFixed(1)}%
-                      </p>
-                    </div>
-
-                    <p className="text-sm font-semibold tabular-nums">
-                      Rp {asset.value.toLocaleString('id-ID')}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+            <PortfolioList assets={portfolioAssets} />
           </Card>
 
           <Card>
