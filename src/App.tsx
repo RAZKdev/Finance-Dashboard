@@ -3,11 +3,11 @@ import {
   Badge,
   Button,
   Card,
-  Input,
   SectionHeader,
 } from './components/ui';
 import { TransactionList } from './components/transactions';
 import { DashboardStats } from './components/dashboard';
+import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
 
@@ -109,21 +109,7 @@ function App() {
           </Card>
         </section>
 
-        <Card>
-          <SectionHeader
-            title="Quick Search"
-            description="Search your financial records."
-          />
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Input
-              placeholder="Search transactions..."
-              className="flex-1"
-            />
-
-            <Button variant="secondary">Search</Button>
-          </div>
-        </Card>
+        <QuickSearch />
       </main>
     </div>
   );
