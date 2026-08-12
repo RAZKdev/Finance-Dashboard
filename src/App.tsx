@@ -22,6 +22,27 @@ function App() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionList, setTransactionList] =
     useState<Transaction[]>(transactions);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSearchQuery, setActiveSearchQuery] = useState('');
+
+  const filteredTransactions = transactionList.filter((transaction) => {
+    const query = activeSearchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return true;
+    }
+
+    return [
+      transaction.title,
+      transaction.category,
+      transaction.type,
+      transaction.date,
+    ].some((value) => value.toLowerCase().includes(query));
+  });
+
+  const handleSearch = () => {
+    setActiveSearchQuery(searchQuery);
+  };
 
   const handleAddTransaction = (transaction: Transaction) => {
     setTransactionList((current) => [transaction, ...current]);
@@ -48,7 +69,7 @@ function App() {
               title="Transactions"
               description="Latest activity in your account."
             />
-            <TransactionList transactions={transactionList} />
+            <TransactionList transactions={filteredTransactions} />
           </Card>
         );
 
@@ -69,7 +90,13 @@ function App() {
       default:
         return (
           <>
-            <DashboardStats />
+            <DashboardStats
+              transactions={transactionList}
+              portfolioValue={portfolioAssets.reduce(
+                (sum, asset) => sum + asset.value,
+                0
+              )}
+            />
 
             <section className="grid gap-6 lg:grid-cols-2">
               <Card>
@@ -85,11 +112,15 @@ function App() {
                   title="Recent Transactions"
                   description="Latest activity in your account."
                 />
-                <TransactionList transactions={transactionList} />
+                <TransactionList transactions={filteredTransactions} />
               </Card>
             </section>
 
-            <QuickSearch />
+            <QuickSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSearch={handleSearch}
+            />
           </>
         );
     }
