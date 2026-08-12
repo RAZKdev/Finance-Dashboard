@@ -5,7 +5,11 @@ import {
   Card,
   SectionHeader,
 } from './components/ui';
-import { TransactionList } from './components/transactions';
+import {
+  TransactionList,
+  TransactionModal,
+} from './components/transactions';
+import type { Transaction } from './types/finance';
 import { Navigation } from './components/navigation';
 import { DashboardStats } from './components/dashboard';
 import { PortfolioList } from './components/portfolio';
@@ -15,6 +19,14 @@ import { portfolioAssets } from './data/portfolio';
 
 function App() {
   const [activeTab, setActiveTab] = useState('Overview');
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [transactionList, setTransactionList] =
+    useState<Transaction[]>(transactions);
+
+  const handleAddTransaction = (transaction: Transaction) => {
+    setTransactionList((current) => [transaction, ...current]);
+    setIsTransactionModalOpen(false);
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -36,7 +48,7 @@ function App() {
               title="Transactions"
               description="Latest activity in your account."
             />
-            <TransactionList transactions={transactions} />
+            <TransactionList transactions={transactionList} />
           </Card>
         );
 
@@ -73,7 +85,7 @@ function App() {
                   title="Recent Transactions"
                   description="Latest activity in your account."
                 />
-                <TransactionList transactions={transactions} />
+                <TransactionList transactions={transactionList} />
               </Card>
             </section>
 
@@ -108,7 +120,10 @@ function App() {
           title={activeTab}
           description="Track your financial position and portfolio performance."
           action={
-            <Button size="sm" onClick={() => alert('Add transaction')}>
+            <Button
+              size="sm"
+              onClick={() => setIsTransactionModalOpen(true)}
+            >
               + Add
             </Button>
           }
@@ -116,6 +131,12 @@ function App() {
 
         {renderTabContent()}
       </main>
+
+      <TransactionModal
+        isOpen={isTransactionModalOpen}
+        onClose={() => setIsTransactionModalOpen(false)}
+        onSubmit={handleAddTransaction}
+      />
     </div>
   );
 }
