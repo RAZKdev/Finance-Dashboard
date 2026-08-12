@@ -1,11 +1,18 @@
 import React from 'react';
+import { Button } from '../ui';
 import type { PortfolioAsset } from '../../types/finance';
 
 interface PortfolioListProps {
   assets: PortfolioAsset[];
+  onEdit?: (asset: PortfolioAsset) => void;
+  onDelete?: (assetId: string) => void;
 }
 
-export const PortfolioList: React.FC<PortfolioListProps> = ({ assets }) => {
+export const PortfolioList: React.FC<PortfolioListProps> = ({
+  assets,
+  onEdit,
+  onDelete,
+}) => {
   const total = assets.reduce((sum, asset) => sum + asset.value, 0);
 
   if (assets.length === 0) {
@@ -33,9 +40,43 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({ assets }) => {
               </p>
             </div>
 
-            <p className="text-sm font-semibold tabular-nums">
-              Rp {asset.value.toLocaleString('id-ID')}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold tabular-nums">
+                Rp {asset.value.toLocaleString('id-ID')}
+              </p>
+
+              {onEdit && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onEdit(asset)}
+                  aria-label={`Edit ${asset.name}`}
+                >
+                  Edit
+                </Button>
+              )}
+
+              {onDelete && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      `Delete portfolio asset "${asset.name}"?`
+                    );
+
+                    if (confirmed) {
+                      onDelete(asset.id);
+                    }
+                  }}
+                  aria-label={`Delete ${asset.name}`}
+                >
+                  Delete
+                </Button>
+              )}
+            </div>
           </div>
         );
       })}

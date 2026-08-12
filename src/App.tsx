@@ -9,19 +9,31 @@ import {
   TransactionList,
   TransactionModal,
 } from './components/transactions';
-import type { Transaction } from './types/finance';
+import type {
+  PortfolioAsset,
+  Transaction,
+} from './types/finance';
 import { Navigation } from './components/navigation';
 import { DashboardStats } from './components/dashboard';
-import { PortfolioList } from './components/portfolio';
+import {
+  PortfolioList,
+  PortfolioModal,
+} from './components/portfolio';
 import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
 
-const TRANSACTIONS_STORAGE_KEY = 'finance-dashboard-transactions-v1';
+const TRANSACTIONS_STORAGE_KEY =
+  'finance-dashboard-transactions-v1';
+
+const PORTFOLIO_STORAGE_KEY =
+  'finance-dashboard-portfolio-v1';
 
 const loadTransactions = (): Transaction[] => {
   try {
-    const stored = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
+    const stored = localStorage.getItem(
+      TRANSACTIONS_STORAGE_KEY
+    );
 
     if (!stored) {
       return transactions;
@@ -44,7 +56,8 @@ const loadTransactions = (): Transaction[] => {
         typeof value.id === 'string' &&
         typeof value.title === 'string' &&
         typeof value.amount === 'number' &&
-        (value.type === 'income' || value.type === 'expense') &&
+        (value.type === 'income' ||
+          value.type === 'expense') &&
         typeof value.category === 'string' &&
         typeof value.date === 'string'
       );
@@ -54,15 +67,64 @@ const loadTransactions = (): Transaction[] => {
   }
 };
 
+const loadPortfolio = (): PortfolioAsset[] => {
+  try {
+    const stored = localStorage.getItem(
+      PORTFOLIO_STORAGE_KEY
+    );
+
+    if (!stored) {
+      return portfolioAssets;
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+
+    if (!Array.isArray(parsed)) {
+      return portfolioAssets;
+    }
+
+    return parsed.filter((item): item is PortfolioAsset => {
+      if (!item || typeof item !== 'object') {
+        return false;
+      }
+
+      const value = item as Record<string, unknown>;
+
+      return (
+        typeof value.id === 'string' &&
+        typeof value.name === 'string' &&
+        typeof value.value === 'number'
+      );
+    });
+  } catch {
+    return portfolioAssets;
+  }
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState('Overview');
-  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+
+  const [isTransactionModalOpen, setIsTransactionModalOpen] =
+    useState(false);
+
   const [transactionList, setTransactionList] =
     useState<Transaction[]>(loadTransactions);
+
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
+
+  const [isPortfolioModalOpen, setIsPortfolioModalOpen] =
+    useState(false);
+
+  const [portfolioList, setPortfolioList] =
+    useState<PortfolioAsset[]>(loadPortfolio);
+
+  const [editingPortfolioAsset, setEditingPortfolioAsset] =
+    useState<PortfolioAsset | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeSearchQuery, setActiveSearchQuery] = useState('');
+  const [activeSearchQuery, setActiveSearchQuery] =
+    useState('');
 
   useEffect(() => {
     try {
@@ -71,53 +133,137 @@ function App() {
         JSON.stringify(transactionList)
       );
     } catch {
-      // Keep the app usable even if localStorage is unavailable.
+      // Keep the app usable if localStorage is unavailable.
     }
   }, [transactionList]);
 
-  const filteredTransactions = transactionList.filter((transaction) => {
-    const query = activeSearchQuery.trim().toLowerCase();
-
-    if (!query) {
-      return true;
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        PORTFOLIO_STORAGE_KEY,
+        JSON.stringify(portfolioList)
+      );
+    } catch {
+      // Keep the app usable if localStorage is unavailable.
     }
+  }, [portfolioList]);
 
-    return [
-      transaction.title,
-      transaction.category,
-      transaction.type,
-      transaction.date,
-    ].some((value) => value.toLowerCase().includes(query));
-  });
+  const filteredTransactions = transactionList.filter(
+    (transaction) => {
+      const query = activeSearchQuery
+        .trim()
+        .toLowerCase();
+
+      if (!query) {
+        return true;
+      }
+
+      return [
+        transaction.title,
+        transaction.category,
+        transaction.type,
+        transaction.date,
+      ].some((value) =>
+        value.toLowerCase().includes(query)
+      );
+    }
+  );
+
+  const portfolioValue = portfolioList.reduce(
+    (sum, asset) => sum + asset.value,
+    0
+  );
+
 
   const handleSearch = () => {
     setActiveSearchQuery(searchQuery);
   };
 
-  const handleEditTransaction = (transaction: Transaction) => {
+  const handleEditTransaction = (
+    transaction: Transaction
+  ) => {
     setEditingTransaction(transaction);
     setIsTransactionModalOpen(true);
   };
 
-  const handleSaveTransaction = (transaction: Transaction) => {
+  const handleSaveTransaction = (
+    transaction: Transaction
+  ) => {
     if (editingTransaction) {
       setTransactionList((current) =>
         current.map((item) =>
-          item.id === transaction.id ? transaction : item
+          item.id === transaction.id
+            ? transaction
+            : item
         )
       );
     } else {
-      setTransactionList((current) => [transaction, ...current]);
+      setTransactionList((current) => [
+        transaction,
+        ...current,
+      ]);
     }
 
     setIsTransactionModalOpen(false);
     setEditingTransaction(null);
   };
 
-  const handleDeleteTransaction = (transactionId: string) => {
+  const handleDeleteTransaction = (
+    transactionId: string
+  ) => {
     setTransactionList((current) =>
-      current.filter((transaction) => transaction.id !== transactionId)
+      current.filter(
+        (transaction) =>
+          transaction.id !== transactionId
+      )
     );
+  };
+
+  const handleSavePortfolio = (
+    asset: PortfolioAsset
+  ) => {
+    if (editingPortfolioAsset) {
+      setPortfolioList((current) =>
+        current.map((item) =>
+          item.id === asset.id ? asset : item
+        )
+      );
+    } else {
+      setPortfolioList((current) => [
+        asset,
+        ...current,
+      ]);
+    }
+
+    setIsPortfolioModalOpen(false);
+    setEditingPortfolioAsset(null);
+  };
+
+  const handleEditPortfolio = (
+    asset: PortfolioAsset
+  ) => {
+    setEditingPortfolioAsset(asset);
+    setIsPortfolioModalOpen(true);
+  };
+
+  const handleDeletePortfolio = (
+    assetId: string
+  ) => {
+    setPortfolioList((current) =>
+      current.filter(
+        (asset) => asset.id !== assetId
+      )
+    );
+  };
+
+  const openAddPortfolio = () => {
+    setEditingPortfolioAsset(null);
+    setIsPortfolioModalOpen(true);
+  };
+
+  const openAddTransaction = () => {
+    setEditingTransaction(null);
+    setIsTransactionModalOpen(true);
   };
 
   const renderTabContent = () => {
@@ -129,7 +275,12 @@ function App() {
               title="Portfolio"
               description="Current allocation across your assets."
             />
-            <PortfolioList assets={portfolioAssets} />
+
+            <PortfolioList
+              assets={portfolioList}
+              onEdit={handleEditPortfolio}
+              onDelete={handleDeletePortfolio}
+            />
           </Card>
         );
 
@@ -140,6 +291,7 @@ function App() {
               title="Transactions"
               description="Latest activity in your account."
             />
+
             <TransactionList
               transactions={filteredTransactions}
               onEdit={handleEditTransaction}
@@ -155,6 +307,7 @@ function App() {
               title="Markets"
               description="Market data will be available here."
             />
+
             <div className="py-8 text-center text-sm text-text-muted">
               Market data is not available yet.
             </div>
@@ -167,10 +320,7 @@ function App() {
           <>
             <DashboardStats
               transactions={transactionList}
-              portfolioValue={portfolioAssets.reduce(
-                (sum, asset) => sum + asset.value,
-                0
-              )}
+              portfolioValue={portfolioValue}
             />
 
             <section className="grid gap-6 lg:grid-cols-2">
@@ -179,7 +329,12 @@ function App() {
                   title="Portfolio Overview"
                   description="Current allocation across your assets."
                 />
-                <PortfolioList assets={portfolioAssets} />
+
+                <PortfolioList
+                  assets={portfolioList}
+                  onEdit={handleEditPortfolio}
+                  onDelete={handleDeletePortfolio}
+                />
               </Card>
 
               <Card>
@@ -187,11 +342,12 @@ function App() {
                   title="Recent Transactions"
                   description="Latest activity in your account."
                 />
+
                 <TransactionList
-              transactions={filteredTransactions}
-              onEdit={handleEditTransaction}
-              onDelete={handleDeleteTransaction}
-            />
+                  transactions={filteredTransactions}
+                  onEdit={handleEditTransaction}
+                  onDelete={handleDeleteTransaction}
+                />
               </Card>
             </section>
 
@@ -210,13 +366,18 @@ function App() {
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
-            <h1 className="text-xl font-semibold">Finance Dashboard</h1>
+            <h1 className="text-xl font-semibold">
+              Finance Dashboard
+            </h1>
+
             <p className="text-xs text-text-muted">
               Personal finance overview
             </p>
           </div>
 
-          <Badge variant="positive">Market Open</Badge>
+          <Badge variant="positive">
+            Market Open
+          </Badge>
         </div>
       </header>
 
@@ -230,19 +391,27 @@ function App() {
           title={activeTab}
           description="Track your financial position and portfolio performance."
           action={
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingTransaction(null);
-                setIsTransactionModalOpen(true);
-              }}
-            >
-              + Add
-            </Button>
+            activeTab === 'Portfolio' ? (
+              <Button
+                size="sm"
+                onClick={openAddPortfolio}
+              >
+                + Add Asset
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={openAddTransaction}
+              >
+                + Add
+              </Button>
+            )
           }
         />
 
         {renderTabContent()}
+
+
       </main>
 
       <TransactionModal
@@ -253,6 +422,16 @@ function App() {
         }}
         onSubmit={handleSaveTransaction}
         initialData={editingTransaction}
+      />
+
+      <PortfolioModal
+        isOpen={isPortfolioModalOpen}
+        onClose={() => {
+          setIsPortfolioModalOpen(false);
+          setEditingPortfolioAsset(null);
+        }}
+        onSubmit={handleSavePortfolio}
+        initialData={editingPortfolioAsset}
       />
     </div>
   );
