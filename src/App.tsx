@@ -59,6 +59,8 @@ function App() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionList, setTransactionList] =
     useState<Transaction[]>(loadTransactions);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
 
@@ -92,9 +94,24 @@ function App() {
     setActiveSearchQuery(searchQuery);
   };
 
-  const handleAddTransaction = (transaction: Transaction) => {
-    setTransactionList((current) => [transaction, ...current]);
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setIsTransactionModalOpen(true);
+  };
+
+  const handleSaveTransaction = (transaction: Transaction) => {
+    if (editingTransaction) {
+      setTransactionList((current) =>
+        current.map((item) =>
+          item.id === transaction.id ? transaction : item
+        )
+      );
+    } else {
+      setTransactionList((current) => [transaction, ...current]);
+    }
+
     setIsTransactionModalOpen(false);
+    setEditingTransaction(null);
   };
 
   const handleDeleteTransaction = (transactionId: string) => {
@@ -125,6 +142,7 @@ function App() {
             />
             <TransactionList
               transactions={filteredTransactions}
+              onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
             />
           </Card>
@@ -171,6 +189,7 @@ function App() {
                 />
                 <TransactionList
               transactions={filteredTransactions}
+              onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
             />
               </Card>
@@ -213,7 +232,10 @@ function App() {
           action={
             <Button
               size="sm"
-              onClick={() => setIsTransactionModalOpen(true)}
+              onClick={() => {
+                setEditingTransaction(null);
+                setIsTransactionModalOpen(true);
+              }}
             >
               + Add
             </Button>
@@ -225,8 +247,12 @@ function App() {
 
       <TransactionModal
         isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
-        onSubmit={handleAddTransaction}
+        onClose={() => {
+          setIsTransactionModalOpen(false);
+          setEditingTransaction(null);
+        }}
+        onSubmit={handleSaveTransaction}
+        initialData={editingTransaction}
       />
     </div>
   );

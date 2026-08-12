@@ -5,11 +5,13 @@ import type { Transaction } from '../../types/finance';
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete?: (transactionId: string) => void;
+  onEdit?: (transaction: Transaction) => void;
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   onDelete,
+  onEdit,
 }) => {
   if (transactions.length === 0) {
     return (
@@ -47,6 +49,18 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               {transaction.type === 'income' ? '+ ' : '- '}
               Rp {transaction.amount.toLocaleString('id-ID')}
             </Badge>
+
+            {onEdit && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => onEdit(transaction)}
+                aria-label={`Edit ${transaction.title}`}
+              >
+                Edit
+              </Button>
+            )}
 
             {onDelete && (
               <Button

@@ -7,12 +7,14 @@ interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (transaction: Transaction) => void;
+  initialData?: Transaction | null;
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  initialData,
 }) => {
   if (!isOpen) {
     return null;
@@ -32,11 +34,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               id="transaction-modal-title"
               className="text-lg font-semibold"
             >
-              Add Transaction
+              {initialData ? 'Edit Transaction' : 'Add Transaction'}
             </h2>
 
             <p className="text-sm text-text-muted">
-              Record a new income or expense.
+              {initialData
+                ? 'Update the transaction details.'
+                : 'Record a new income or expense.'}
             </p>
           </div>
 
@@ -54,6 +58,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         <TransactionForm
           onSubmit={onSubmit}
           onCancel={onClose}
+          initialData={initialData}
         />
       </Card>
     </div>

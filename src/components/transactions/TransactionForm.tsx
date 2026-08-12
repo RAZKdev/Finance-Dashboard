@@ -5,18 +5,24 @@ import type { Transaction, TransactionType } from '../../types/finance';
 interface TransactionFormProps {
   onSubmit: (transaction: Transaction) => void;
   onCancel?: () => void;
+  initialData?: Transaction | null;
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   onSubmit,
   onCancel,
+  initialData,
 }) => {
-  const [type, setType] = useState<TransactionType>('expense');
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
+  const [type, setType] = useState<TransactionType>(
+    initialData?.type ?? 'expense'
+  );
+  const [title, setTitle] = useState(initialData?.title ?? '');
+  const [amount, setAmount] = useState(
+    initialData ? String(initialData.amount) : ''
+  );
+  const [category, setCategory] = useState(initialData?.category ?? '');
   const [date, setDate] = useState(
-    new Date().toISOString().split('T')[0]
+    initialData?.date ?? new Date().toISOString().split('T')[0]
   );
   const [error, setError] = useState('');
 
@@ -46,7 +52,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
 
     const transaction: Transaction = {
-      id: `tx-${Date.now()}`,
+      id: initialData?.id ?? `tx-${Date.now()}`,
       title: title.trim(),
       amount: numericAmount,
       type,
@@ -121,7 +127,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         )}
 
         <Button type="submit">
-          Add Transaction
+          {initialData ? 'Save Changes' : 'Add Transaction'}
         </Button>
       </div>
     </form>
