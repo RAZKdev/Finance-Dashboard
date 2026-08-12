@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Badge,
   Button,
@@ -17,13 +17,61 @@ import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
 
+const TRANSACTIONS_STORAGE_KEY = 'finance-dashboard-transactions-v1';
+
+const loadTransactions = (): Transaction[] => {
+  try {
+    const stored = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
+
+    if (!stored) {
+      return transactions;
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+
+    if (!Array.isArray(parsed)) {
+      return transactions;
+    }
+
+    return parsed.filter((item): item is Transaction => {
+      if (!item || typeof item !== 'object') {
+        return false;
+      }
+
+      const value = item as Record<string, unknown>;
+
+      return (
+        typeof value.id === 'string' &&
+        typeof value.title === 'string' &&
+        typeof value.amount === 'number' &&
+        (value.type === 'income' || value.type === 'expense') &&
+        typeof value.category === 'string' &&
+        typeof value.date === 'string'
+      );
+    });
+  } catch {
+    return transactions;
+  }
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState('Overview');
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionList, setTransactionList] =
-    useState<Transaction[]>(transactions);
+    useState<Transaction[]>(loadTransactions);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        TRANSACTIONS_STORAGE_KEY,
+        JSON.stringify(transactionList)
+      );
+    } catch {
+      // Keep the app usable even if localStorage is unavailable.
+    }
+  }, [transactionList]);
 
   const filteredTransactions = transactionList.filter((transaction) => {
     const query = activeSearchQuery.trim().toLowerCase();
