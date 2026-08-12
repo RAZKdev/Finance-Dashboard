@@ -25,7 +25,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     <div className="space-y-4">
       {transactions.map((transaction) => (
         <div
-          key={transaction.id}
+          key={`${transaction.id}-${transaction.title}-${transaction.amount}-${transaction.category}-${transaction.date}-${transaction.type}`}
           className="flex items-center justify-between gap-4 border-b border-border pb-3 last:border-0"
         >
           <div className="min-w-0">

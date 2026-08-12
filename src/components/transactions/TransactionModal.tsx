@@ -56,6 +56,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         </div>
 
         <TransactionForm
+          key={initialData?.id ?? 'new'}
           onSubmit={onSubmit}
           onCancel={onClose}
           initialData={initialData}
