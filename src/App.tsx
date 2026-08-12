@@ -97,6 +97,12 @@ function App() {
     setIsTransactionModalOpen(false);
   };
 
+  const handleDeleteTransaction = (transactionId: string) => {
+    setTransactionList((current) =>
+      current.filter((transaction) => transaction.id !== transactionId)
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Portfolio':
@@ -117,7 +123,10 @@ function App() {
               title="Transactions"
               description="Latest activity in your account."
             />
-            <TransactionList transactions={filteredTransactions} />
+            <TransactionList
+              transactions={filteredTransactions}
+              onDelete={handleDeleteTransaction}
+            />
           </Card>
         );
 
@@ -160,7 +169,10 @@ function App() {
                   title="Recent Transactions"
                   description="Latest activity in your account."
                 />
-                <TransactionList transactions={filteredTransactions} />
+                <TransactionList
+              transactions={filteredTransactions}
+              onDelete={handleDeleteTransaction}
+            />
               </Card>
             </section>
 

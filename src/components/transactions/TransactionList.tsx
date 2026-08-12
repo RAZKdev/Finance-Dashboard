@@ -1,13 +1,15 @@
 import React from 'react';
-import { Badge } from '../ui';
+import { Badge, Button } from '../ui';
 import type { Transaction } from '../../types/finance';
 
 interface TransactionListProps {
   transactions: Transaction[];
+  onDelete?: (transactionId: string) => void;
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
+  onDelete,
 }) => {
   if (transactions.length === 0) {
     return (
@@ -34,16 +36,38 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             </p>
           </div>
 
-          <Badge
-            variant={
-              transaction.type === 'income'
-                ? 'positive'
-                : 'negative'
-            }
-          >
-            {transaction.type === 'income' ? '+ ' : '- '}
-            Rp {transaction.amount.toLocaleString('id-ID')}
-          </Badge>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge
+              variant={
+                transaction.type === 'income'
+                  ? 'positive'
+                  : 'negative'
+              }
+            >
+              {transaction.type === 'income' ? '+ ' : '- '}
+              Rp {transaction.amount.toLocaleString('id-ID')}
+            </Badge>
+
+            {onDelete && (
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    `Delete transaction "${transaction.title}"?`
+                  );
+
+                  if (confirmed) {
+                    onDelete(transaction.id);
+                  }
+                }}
+                aria-label={`Delete ${transaction.title}`}
+              >
+                Delete
+              </Button>
+            )}
+          </div>
         </div>
       ))}
     </div>
