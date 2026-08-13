@@ -19,9 +19,11 @@ import {
   PortfolioList,
   PortfolioModal,
 } from './components/portfolio';
+import { MarketList } from './components/markets';
 import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
+import { marketAssets } from './data/markets';
 import { calculatePortfolioMetrics } from './utils/portfolio';
 
 const TRANSACTIONS_STORAGE_KEY =
@@ -343,12 +345,10 @@ function App() {
           <Card>
             <SectionHeader
               title="Markets"
-              description="Market data will be available here."
+              description="Latest market snapshot."
             />
 
-            <div className="py-8 text-center text-sm text-text-muted">
-              Market data is not available yet.
-            </div>
+            <MarketList assets={marketAssets} />
           </Card>
         );
 
