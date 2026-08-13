@@ -5,6 +5,8 @@ interface MarketListProps {
   assets: MarketAsset[];
 }
 
+type MarketFilter = 'all' | MarketAsset['type'];
+
 const formatPrice = (asset: MarketAsset) => {
   if (asset.currency === 'IDR') {
     return `Rp ${asset.price.toLocaleString('id-ID')}`;
@@ -24,6 +26,20 @@ const typeLabel: Record<MarketAsset['type'], string> = {
 export const MarketList: React.FC<MarketListProps> = ({
   assets,
 }) => {
+  const [filter, setFilter] = React.useState<MarketFilter>('all');
+
+  const filteredAssets =
+    filter === 'all'
+      ? assets
+      : assets.filter((asset) => asset.type === filter);
+
+  const filters: Array<{ value: MarketFilter; label: string }> = [
+    { value: 'all', label: 'All' },
+    { value: 'stock', label: 'Stocks' },
+    { value: 'crypto', label: 'Crypto' },
+    { value: 'forex', label: 'Forex' },
+  ];
+
   if (assets.length === 0) {
     return (
       <div className="py-8 text-center text-sm text-text-muted">
@@ -33,8 +49,40 @@ export const MarketList: React.FC<MarketListProps> = ({
   }
 
   return (
-    <div className="space-y-3">
-      {assets.map((asset) => {
+    <div className="space-y-4">
+      <div
+        className="flex flex-wrap gap-2"
+        role="group"
+        aria-label="Market filters"
+      >
+        {filters.map((item) => {
+          const isActive = filter === item.value;
+
+          return (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setFilter(item.value)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                isActive
+                  ? 'bg-primary text-white'
+                  : 'bg-surface text-text-muted hover:text-text-primary'
+              }`}
+              aria-pressed={isActive}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {filteredAssets.length === 0 ? (
+        <div className="py-6 text-center text-sm text-text-muted">
+          No assets found for this filter.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredAssets.map((asset) => {
         const isPositive = asset.changePercent >= 0;
 
         return (
@@ -75,8 +123,10 @@ export const MarketList: React.FC<MarketListProps> = ({
               </p>
             </div>
           </div>
-        );
-      })}
+          );
+        })}
+        </div>
+      )}
     </div>
   );
 };
