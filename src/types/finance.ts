@@ -13,4 +13,10 @@ export interface PortfolioAsset {
   id: string;
   name: string;
   value: number;
+  symbol?: string;
+  assetType?: 'stock' | 'crypto' | 'forex' | 'cash';
+  quantity?: number;
+  averageBuyPrice?: number;
+  currentPrice?: number;
+  currency?: string;
 }
