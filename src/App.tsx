@@ -22,6 +22,7 @@ import {
 import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
+import { calculatePortfolioMetrics } from './utils/portfolio';
 
 const TRANSACTIONS_STORAGE_KEY =
   'finance-dashboard-transactions-v1';
@@ -169,10 +170,47 @@ function App() {
     }
   );
 
+  const portfolioMetrics = portfolioList.map(
+    calculatePortfolioMetrics
+  );
+
   const portfolioValue = portfolioList.reduce(
-    (sum, asset) => sum + asset.value,
+    (sum, asset, index) =>
+      sum +
+      (portfolioMetrics[index].marketValue ?? asset.value),
     0
   );
+
+  const hasCompletePortfolioMetrics =
+    portfolioList.length > 0 &&
+    portfolioMetrics.every(
+      (metrics) =>
+        metrics.costBasis !== null &&
+        metrics.marketValue !== null &&
+        metrics.profitLoss !== null &&
+        metrics.profitLossPercent !== null
+    );
+
+  const portfolioProfitLoss = hasCompletePortfolioMetrics
+    ? portfolioMetrics.reduce(
+        (sum, metrics) => sum + (metrics.profitLoss ?? 0),
+        0
+      )
+    : null;
+
+  const portfolioCostBasis = hasCompletePortfolioMetrics
+    ? portfolioMetrics.reduce(
+        (sum, metrics) => sum + (metrics.costBasis ?? 0),
+        0
+      )
+    : 0;
+
+  const portfolioProfitLossPercent =
+    hasCompletePortfolioMetrics &&
+    portfolioCostBasis > 0 &&
+    portfolioProfitLoss !== null
+      ? (portfolioProfitLoss / portfolioCostBasis) * 100
+      : null;
 
 
   const handleSearch = () => {
@@ -321,6 +359,8 @@ function App() {
             <DashboardStats
               transactions={transactionList}
               portfolioValue={portfolioValue}
+              portfolioProfitLoss={portfolioProfitLoss}
+              portfolioProfitLossPercent={portfolioProfitLossPercent}
             />
 
             <section className="grid gap-6 lg:grid-cols-2">

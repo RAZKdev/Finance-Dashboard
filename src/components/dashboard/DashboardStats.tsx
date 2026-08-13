@@ -5,6 +5,8 @@ import type { Transaction } from '../../types/finance';
 interface DashboardStatsProps {
   transactions: Transaction[];
   portfolioValue: number;
+  portfolioProfitLoss: number | null;
+  portfolioProfitLossPercent: number | null;
 }
 
 const formatCurrency = (value: number) =>
@@ -13,6 +15,8 @@ const formatCurrency = (value: number) =>
 export const DashboardStats: React.FC<DashboardStatsProps> = ({
   transactions,
   portfolioValue,
+  portfolioProfitLoss,
+  portfolioProfitLossPercent,
 }) => {
   const currentMonth = new Date().toISOString().slice(0, 7);
 
@@ -36,8 +40,14 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
     0
   );
 
+  const portfolioChange =
+    portfolioProfitLoss !== null &&
+    portfolioProfitLossPercent !== null
+      ? `${portfolioProfitLoss >= 0 ? '+' : ''}${portfolioProfitLossPercent.toFixed(2)}%`
+      : 'No P/L data';
+
   return (
-    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <StatCard
         label="Total Balance"
         value={formatCurrency(totalBalance)}
@@ -48,8 +58,27 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
       <StatCard
         label="Portfolio"
         value={formatCurrency(portfolioValue)}
-        change="Current value"
+        change="Current market value"
         trend="up"
+      />
+
+      <StatCard
+        label="Portfolio P/L"
+        value={
+          portfolioProfitLoss !== null
+            ? `${portfolioProfitLoss >= 0 ? '+' : '-'}Rp ${Math.abs(
+                portfolioProfitLoss
+              ).toLocaleString('id-ID')}`
+            : '—'
+        }
+        change={portfolioChange}
+        trend={
+          portfolioProfitLoss === null
+            ? 'up'
+            : portfolioProfitLoss >= 0
+              ? 'up'
+              : 'down'
+        }
       />
 
       <StatCard
