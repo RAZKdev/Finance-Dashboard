@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '../ui';
 import type { PortfolioAsset } from '../../types/finance';
+import { calculatePortfolioMetrics } from '../../utils/portfolio';
 
 interface PortfolioListProps {
   assets: PortfolioAsset[];
@@ -27,6 +28,7 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
     <div className="space-y-4">
       {assets.map((asset) => {
         const percentage = total > 0 ? (asset.value / total) * 100 : 0;
+        const metrics = calculatePortfolioMetrics(asset);
 
         return (
           <div
@@ -40,10 +42,28 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold tabular-nums">
-                Rp {asset.value.toLocaleString('id-ID')}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-semibold tabular-nums">
+                  Rp {asset.value.toLocaleString('id-ID')}
+                </p>
+
+                {metrics.profitLoss !== null &&
+                  metrics.profitLossPercent !== null && (
+                    <p
+                      className={`text-xs font-medium tabular-nums ${
+                        metrics.profitLoss >= 0
+                          ? 'text-positive'
+                          : 'text-negative'
+                      }`}
+                    >
+                      {metrics.profitLoss >= 0 ? '+' : '-'}Rp{' '}
+                      {Math.abs(metrics.profitLoss).toLocaleString('id-ID')}{' '}
+                      ({metrics.profitLoss >= 0 ? '+' : ''}
+                      {metrics.profitLossPercent.toFixed(2)}%)
+                    </p>
+                  )}
+              </div>
 
               {onEdit && (
                 <Button
