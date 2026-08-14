@@ -120,13 +120,29 @@ export const MarketList: React.FC<MarketListProps> = ({
 }) => {
   const [filter, setFilter] = React.useState<MarketFilter>('all');
   const [sort, setSort] = React.useState<MarketSort>('default');
+  const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedAsset, setSelectedAsset] =
     React.useState<MarketAsset | null>(null);
 
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+
+  const searchedAssets =
+    normalizedSearchQuery === ''
+      ? assets
+      : assets.filter((asset) =>
+          [
+            asset.symbol,
+            asset.name,
+            asset.type,
+          ].some((value) =>
+            value.toLowerCase().includes(normalizedSearchQuery)
+          )
+        );
+
   const filteredAssets =
     filter === 'all'
-      ? assets
-      : assets.filter((asset) => asset.type === filter);
+      ? searchedAssets
+      : searchedAssets.filter((asset) => asset.type === filter);
 
   const sortedAssets = [...filteredAssets].sort((a, b) => {
     switch (sort) {
@@ -178,6 +194,24 @@ export const MarketList: React.FC<MarketListProps> = ({
 
   return (
     <div className="space-y-4">
+      <div className="relative">
+        <label
+          htmlFor="market-search"
+          className="sr-only"
+        >
+          Search markets
+        </label>
+
+        <input
+          id="market-search"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search symbol, asset name, or type..."
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+        />
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div
           className="flex flex-wrap gap-2"
@@ -225,7 +259,9 @@ export const MarketList: React.FC<MarketListProps> = ({
 
       {sortedAssets.length === 0 ? (
         <div className="py-6 text-center text-sm text-text-muted">
-          No assets found for this filter.
+          {normalizedSearchQuery
+            ? 'No markets match your search.'
+            : 'No assets found for this filter.'}
         </div>
       ) : (
         <div className="space-y-2">
