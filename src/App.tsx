@@ -29,7 +29,7 @@ import { marketAssets } from './data/markets';
 import {
   calculatePortfolioAllocation,
   calculatePortfolioAnalytics,
-  calculatePortfolioMetrics,
+  getPortfolioValue,
 } from './utils/portfolio';
 
 const TRANSACTIONS_STORAGE_KEY =
@@ -185,11 +185,7 @@ function App() {
     calculatePortfolioAllocation(portfolioList);
 
   const portfolioValue = portfolioList.reduce(
-    (sum, asset) => {
-      const metrics = calculatePortfolioMetrics(asset);
-
-      return sum + (metrics.marketValue ?? asset.value);
-    },
+    (sum, asset) => sum + getPortfolioValue(asset),
     0
   );
 

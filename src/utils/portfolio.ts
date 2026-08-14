@@ -60,6 +60,14 @@ export function calculatePortfolioMetrics(
   };
 }
 
+export function getPortfolioValue(
+  asset: PortfolioAsset
+): number {
+  const metrics = calculatePortfolioMetrics(asset);
+
+  return metrics.marketValue ?? asset.value;
+}
+
 export interface PortfolioAnalytics {
   totalAssets: number;
   totalCostBasis: number;
@@ -180,29 +188,30 @@ export interface PortfolioAllocation {
 export function calculatePortfolioAllocation(
   assets: PortfolioAsset[]
 ): PortfolioAllocation {
-  const totalValue = assets.reduce(
-    (sum, asset) => sum + (
-      Number.isFinite(asset.value) && asset.value > 0
-        ? asset.value
-        : 0
-    ),
+  const valuedAssets = assets
+    .map((asset) => ({
+      asset,
+      value: getPortfolioValue(asset),
+    }))
+    .filter(
+      ({ value }) =>
+        Number.isFinite(value) &&
+        value > 0
+    );
+
+  const totalValue = valuedAssets.reduce(
+    (sum, item) => sum + item.value,
     0
   );
 
-  const items = assets
-    .filter(
-      (asset) =>
-        Number.isFinite(asset.value) &&
-        asset.value > 0
-    )
-    .map((asset) => ({
-      asset,
-      value: asset.value,
-      percentage:
-        totalValue > 0
-          ? (asset.value / totalValue) * 100
-          : 0,
-    }));
+  const items = valuedAssets.map(({ asset, value }) => ({
+    asset,
+    value,
+    percentage:
+      totalValue > 0
+        ? (value / totalValue) * 100
+        : 0,
+  }));
 
   return {
     totalValue,

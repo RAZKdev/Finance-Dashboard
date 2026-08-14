@@ -1,7 +1,10 @@
 import React from 'react';
 import { Button } from '../ui';
 import type { PortfolioAsset } from '../../types/finance';
-import { calculatePortfolioMetrics } from '../../utils/portfolio';
+import {
+  calculatePortfolioMetrics,
+  getPortfolioValue,
+} from '../../utils/portfolio';
 
 interface PortfolioListProps {
   assets: PortfolioAsset[];
@@ -14,7 +17,10 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const total = assets.reduce((sum, asset) => sum + asset.value, 0);
+  const total = assets.reduce(
+    (sum, asset) => sum + getPortfolioValue(asset),
+    0
+  );
 
   if (assets.length === 0) {
     return (
@@ -27,7 +33,9 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
   return (
     <div className="space-y-4">
       {assets.map((asset) => {
-        const percentage = total > 0 ? (asset.value / total) * 100 : 0;
+        const portfolioValue = getPortfolioValue(asset);
+        const percentage =
+          total > 0 ? (portfolioValue / total) * 100 : 0;
         const metrics = calculatePortfolioMetrics(asset);
 
         return (
@@ -45,7 +53,7 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <p className="text-sm font-semibold tabular-nums">
-                  Rp {asset.value.toLocaleString('id-ID')}
+                  Rp {portfolioValue.toLocaleString('id-ID')}
                 </p>
 
                 {metrics.profitLoss !== null &&
