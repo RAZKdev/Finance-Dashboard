@@ -13,6 +13,10 @@ type MarketSort =
   | 'change-asc'
   | 'change-desc';
 
+type MarketView = 'all' | 'favorites';
+
+const FAVORITES_STORAGE_KEY = 'finance-dashboard-market-favorites-v1';
+
 const formatPrice = (asset: MarketAsset) => {
   if (asset.currency === 'IDR') {
     return `Rp ${asset.price.toLocaleString('id-ID')}`;
@@ -120,9 +124,44 @@ export const MarketList: React.FC<MarketListProps> = ({
 }) => {
   const [filter, setFilter] = React.useState<MarketFilter>('all');
   const [sort, setSort] = React.useState<MarketSort>('default');
+  const [view, setView] = React.useState<MarketView>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedAsset, setSelectedAsset] =
     React.useState<MarketAsset | null>(null);
+
+  const [favoriteIds, setFavoriteIds] = React.useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(
+        FAVORITES_STORAGE_KEY
+      );
+
+      if (!stored) {
+        return [];
+      }
+
+      const parsed: unknown = JSON.parse(stored);
+
+      return Array.isArray(parsed)
+        ? parsed.filter(
+            (item): item is string =>
+              typeof item === 'string'
+          )
+        : [];
+    } catch {
+      return [];
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(
+        FAVORITES_STORAGE_KEY,
+        JSON.stringify(favoriteIds)
+      );
+    } catch {
+      // Keep the watchlist usable if localStorage is unavailable.
+    }
+  }, [favoriteIds]);
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
@@ -139,10 +178,17 @@ export const MarketList: React.FC<MarketListProps> = ({
           )
         );
 
+  const viewedAssets =
+    view === 'favorites'
+      ? searchedAssets.filter((asset) =>
+          favoriteIds.includes(asset.id)
+        )
+      : searchedAssets;
+
   const filteredAssets =
     filter === 'all'
-      ? searchedAssets
-      : searchedAssets.filter((asset) => asset.type === filter);
+      ? viewedAssets
+      : viewedAssets.filter((asset) => asset.type === filter);
 
   const sortedAssets = [...filteredAssets].sort((a, b) => {
     switch (sort) {
@@ -165,6 +211,11 @@ export const MarketList: React.FC<MarketListProps> = ({
     { value: 'stock', label: 'Stocks' },
     { value: 'crypto', label: 'Crypto' },
     { value: 'forex', label: 'Forex' },
+  ];
+
+  const views: Array<{ value: MarketView; label: string }> = [
+    { value: 'all', label: 'All Assets' },
+    { value: 'favorites', label: 'Favorites' },
   ];
 
   const sorts: Array<{ value: MarketSort; label: string }> = [
@@ -212,12 +263,39 @@ export const MarketList: React.FC<MarketListProps> = ({
         />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3">
         <div
           className="flex flex-wrap gap-2"
           role="group"
-          aria-label="Market filters"
+          aria-label="Market views"
         >
+          {views.map((item) => {
+            const isActive = view === item.value;
+
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setView(item.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary text-white'
+                    : 'bg-surface text-text-muted hover:text-text-primary'
+                }`}
+                aria-pressed={isActive}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Market filters"
+          >
           {filters.map((item) => {
             const isActive = filter === item.value;
 
@@ -254,28 +332,58 @@ export const MarketList: React.FC<MarketListProps> = ({
               </option>
             ))}
           </select>
-        </label>
+          </label>
+        </div>
       </div>
 
       {sortedAssets.length === 0 ? (
         <div className="py-6 text-center text-sm text-text-muted">
-          {normalizedSearchQuery
-            ? 'No markets match your search.'
-            : 'No assets found for this filter.'}
+          {view === 'favorites'
+            ? 'No favorite markets match your current search/filter.'
+            : normalizedSearchQuery
+              ? 'No markets match your search.'
+              : 'No assets found for this filter.'}
         </div>
       ) : (
         <div className="space-y-2">
           {sortedAssets.map((asset) => {
             const isPositive = asset.changePercent >= 0;
 
+            const isFavorite = favoriteIds.includes(asset.id);
+
+            const toggleFavorite = () => {
+              setFavoriteIds((current) =>
+                current.includes(asset.id)
+                  ? current.filter((id) => id !== asset.id)
+                  : [...current, asset.id]
+              );
+            };
+
             return (
-              <button
+              <div
                 key={asset.id}
-                type="button"
-                onClick={() => setSelectedAsset(asset)}
-                className="flex w-full items-center justify-between gap-4 rounded-lg border-b border-border pb-3 pt-1 text-left transition-colors hover:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40 last:border-0"
-                aria-label={`View details for ${asset.symbol}`}
+                className="flex items-center gap-2 border-b border-border pb-3 pt-1 last:border-0"
               >
+                <button
+                  type="button"
+                  onClick={toggleFavorite}
+                  className="shrink-0 rounded-lg px-2 py-2 text-lg transition-colors hover:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  aria-pressed={isFavorite}
+                  aria-label={
+                    isFavorite
+                      ? `Remove ${asset.symbol} from favorites`
+                      : `Add ${asset.symbol} to favorites`
+                  }
+                >
+                  {isFavorite ? '★' : '☆'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedAsset(asset)}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left transition-colors hover:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  aria-label={`View details for ${asset.symbol}`}
+                >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold">
@@ -308,7 +416,8 @@ export const MarketList: React.FC<MarketListProps> = ({
                     {asset.changePercent.toFixed(2)}%
                   </p>
                 </div>
-              </button>
+                </button>
+              </div>
             );
           })}
         </div>
