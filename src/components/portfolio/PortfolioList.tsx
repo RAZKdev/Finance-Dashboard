@@ -47,17 +47,17 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
         return (
           <div
             key={asset.id}
-            className="flex items-center justify-between border-b border-border pb-3 last:border-0"
+            className="flex flex-col gap-3 border-b border-border pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div>
-              <p className="text-sm font-medium">{asset.name}</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{asset.name}</p>
               <p className="text-xs text-text-muted">
                 {percentage.toFixed(1)}%
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="text-right">
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+              <div className="min-w-0 text-right">
                 <p className="text-sm font-semibold tabular-nums">
                   Rp {portfolioValue.toLocaleString('id-ID')}
                 </p>

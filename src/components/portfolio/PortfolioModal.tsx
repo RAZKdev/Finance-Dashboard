@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button, Card } from '../ui';
 import { PortfolioForm } from './PortfolioForm';
 import type { PortfolioAsset } from '../../types/finance';
@@ -16,6 +16,24 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({
   onSubmit,
   initialData,
 }) => {
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) {
     return null;
   }
@@ -28,8 +46,12 @@ export const PortfolioModal: React.FC<PortfolioModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="portfolio-modal-title"
+      onClick={onClose}
     >
-      <Card className="w-full max-w-md">
+      <Card
+        className="w-full max-w-md"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <h2
