@@ -24,7 +24,10 @@ import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
 import { marketAssets } from './data/markets';
-import { calculatePortfolioMetrics } from './utils/portfolio';
+import {
+  calculatePortfolioAnalytics,
+  calculatePortfolioMetrics,
+} from './utils/portfolio';
 
 const TRANSACTIONS_STORAGE_KEY =
   'finance-dashboard-transactions-v1';
@@ -172,47 +175,23 @@ function App() {
     }
   );
 
-  const portfolioMetrics = portfolioList.map(
-    calculatePortfolioMetrics
-  );
+  const portfolioAnalytics =
+    calculatePortfolioAnalytics(portfolioList);
 
   const portfolioValue = portfolioList.reduce(
-    (sum, asset, index) =>
-      sum +
-      (portfolioMetrics[index].marketValue ?? asset.value),
+    (sum, asset) => {
+      const metrics = calculatePortfolioMetrics(asset);
+
+      return sum + (metrics.marketValue ?? asset.value);
+    },
     0
   );
 
-  const hasCompletePortfolioMetrics =
-    portfolioList.length > 0 &&
-    portfolioMetrics.every(
-      (metrics) =>
-        metrics.costBasis !== null &&
-        metrics.marketValue !== null &&
-        metrics.profitLoss !== null &&
-        metrics.profitLossPercent !== null
-    );
-
-  const portfolioProfitLoss = hasCompletePortfolioMetrics
-    ? portfolioMetrics.reduce(
-        (sum, metrics) => sum + (metrics.profitLoss ?? 0),
-        0
-      )
-    : null;
-
-  const portfolioCostBasis = hasCompletePortfolioMetrics
-    ? portfolioMetrics.reduce(
-        (sum, metrics) => sum + (metrics.costBasis ?? 0),
-        0
-      )
-    : 0;
+  const portfolioProfitLoss =
+    portfolioAnalytics.totalProfitLoss;
 
   const portfolioProfitLossPercent =
-    hasCompletePortfolioMetrics &&
-    portfolioCostBasis > 0 &&
-    portfolioProfitLoss !== null
-      ? (portfolioProfitLoss / portfolioCostBasis) * 100
-      : null;
+    portfolioAnalytics.totalProfitLossPercent;
 
 
   const handleSearch = () => {
