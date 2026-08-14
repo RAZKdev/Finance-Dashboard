@@ -12,13 +12,21 @@ interface DashboardStatsProps {
 const formatCurrency = (value: number) =>
   `Rp ${value.toLocaleString('id-ID')}`;
 
+const getCurrentMonth = () => {
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, '0')}`;
+};
+
 export const DashboardStats: React.FC<DashboardStatsProps> = ({
   transactions,
   portfolioValue,
   portfolioProfitLoss,
   portfolioProfitLossPercent,
 }) => {
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = getCurrentMonth();
 
   const monthlyTransactions = transactions.filter((transaction) =>
     transaction.date.startsWith(currentMonth)
