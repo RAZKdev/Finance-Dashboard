@@ -16,6 +16,7 @@ import type {
 import { Navigation } from './components/navigation';
 import { DashboardStats } from './components/dashboard';
 import {
+  PortfolioAnalytics,
   PortfolioList,
   PortfolioModal,
 } from './components/portfolio';
@@ -340,6 +341,10 @@ function App() {
               portfolioValue={portfolioValue}
               portfolioProfitLoss={portfolioProfitLoss}
               portfolioProfitLossPercent={portfolioProfitLossPercent}
+            />
+
+            <PortfolioAnalytics
+              analytics={portfolioAnalytics}
             />
 
             <section className="grid gap-6 lg:grid-cols-2">
