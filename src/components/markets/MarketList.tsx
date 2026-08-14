@@ -6,6 +6,12 @@ interface MarketListProps {
 }
 
 type MarketFilter = 'all' | MarketAsset['type'];
+type MarketSort =
+  | 'default'
+  | 'price-asc'
+  | 'price-desc'
+  | 'change-asc'
+  | 'change-desc';
 
 const formatPrice = (asset: MarketAsset) => {
   if (asset.currency === 'IDR') {
@@ -113,6 +119,7 @@ export const MarketList: React.FC<MarketListProps> = ({
   assets,
 }) => {
   const [filter, setFilter] = React.useState<MarketFilter>('all');
+  const [sort, setSort] = React.useState<MarketSort>('default');
   const [selectedAsset, setSelectedAsset] =
     React.useState<MarketAsset | null>(null);
 
@@ -121,11 +128,35 @@ export const MarketList: React.FC<MarketListProps> = ({
       ? assets
       : assets.filter((asset) => asset.type === filter);
 
+  const sortedAssets = [...filteredAssets].sort((a, b) => {
+    switch (sort) {
+      case 'price-asc':
+        return a.price - b.price;
+      case 'price-desc':
+        return b.price - a.price;
+      case 'change-asc':
+        return a.changePercent - b.changePercent;
+      case 'change-desc':
+        return b.changePercent - a.changePercent;
+      case 'default':
+      default:
+        return 0;
+    }
+  });
+
   const filters: Array<{ value: MarketFilter; label: string }> = [
     { value: 'all', label: 'All' },
     { value: 'stock', label: 'Stocks' },
     { value: 'crypto', label: 'Crypto' },
     { value: 'forex', label: 'Forex' },
+  ];
+
+  const sorts: Array<{ value: MarketSort; label: string }> = [
+    { value: 'default', label: 'Default' },
+    { value: 'price-asc', label: 'Price ↑' },
+    { value: 'price-desc', label: 'Price ↓' },
+    { value: 'change-asc', label: 'Change ↑' },
+    { value: 'change-desc', label: 'Change ↓' },
   ];
 
   if (assets.length === 0) {
@@ -147,39 +178,58 @@ export const MarketList: React.FC<MarketListProps> = ({
 
   return (
     <div className="space-y-4">
-      <div
-        className="flex flex-wrap gap-2"
-        role="group"
-        aria-label="Market filters"
-      >
-        {filters.map((item) => {
-          const isActive = filter === item.value;
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="Market filters"
+        >
+          {filters.map((item) => {
+            const isActive = filter === item.value;
 
-          return (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setFilter(item.value)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                isActive
-                  ? 'bg-primary text-white'
-                  : 'bg-surface text-text-muted hover:text-text-primary'
-              }`}
-              aria-pressed={isActive}
-            >
-              {item.label}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setFilter(item.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary text-white'
+                    : 'bg-surface text-text-muted hover:text-text-primary'
+                }`}
+                aria-pressed={isActive}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <label className="flex items-center gap-2 text-xs text-text-muted">
+          <span>Sort</span>
+          <select
+            value={sort}
+            onChange={(event) =>
+              setSort(event.target.value as MarketSort)
+            }
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            {sorts.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      {filteredAssets.length === 0 ? (
+      {sortedAssets.length === 0 ? (
         <div className="py-6 text-center text-sm text-text-muted">
           No assets found for this filter.
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredAssets.map((asset) => {
+          {sortedAssets.map((asset) => {
             const isPositive = asset.changePercent >= 0;
 
             return (
