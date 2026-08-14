@@ -164,3 +164,52 @@ export function calculatePortfolioAnalytics(
     worstPerformer,
   };
 }
+
+export interface PortfolioAllocationItem {
+  asset: PortfolioAsset;
+  value: number;
+  percentage: number;
+}
+
+export interface PortfolioAllocation {
+  totalValue: number;
+  items: PortfolioAllocationItem[];
+  complete: boolean;
+}
+
+export function calculatePortfolioAllocation(
+  assets: PortfolioAsset[]
+): PortfolioAllocation {
+  const totalValue = assets.reduce(
+    (sum, asset) => sum + (
+      Number.isFinite(asset.value) && asset.value > 0
+        ? asset.value
+        : 0
+    ),
+    0
+  );
+
+  const items = assets
+    .filter(
+      (asset) =>
+        Number.isFinite(asset.value) &&
+        asset.value > 0
+    )
+    .map((asset) => ({
+      asset,
+      value: asset.value,
+      percentage:
+        totalValue > 0
+          ? (asset.value / totalValue) * 100
+          : 0,
+    }));
+
+  return {
+    totalValue,
+    items,
+    complete:
+      assets.length > 0 &&
+      items.length === assets.length &&
+      totalValue > 0,
+  };
+}

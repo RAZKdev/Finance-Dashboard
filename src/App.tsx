@@ -16,6 +16,7 @@ import type {
 import { Navigation } from './components/navigation';
 import { DashboardStats } from './components/dashboard';
 import {
+  PortfolioAllocation,
   PortfolioAnalytics,
   PortfolioList,
   PortfolioModal,
@@ -26,6 +27,7 @@ import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
 import { marketAssets } from './data/markets';
 import {
+  calculatePortfolioAllocation,
   calculatePortfolioAnalytics,
   calculatePortfolioMetrics,
 } from './utils/portfolio';
@@ -178,6 +180,9 @@ function App() {
 
   const portfolioAnalytics =
     calculatePortfolioAnalytics(portfolioList);
+
+  const portfolioAllocation =
+    calculatePortfolioAllocation(portfolioList);
 
   const portfolioValue = portfolioList.reduce(
     (sum, asset) => {
@@ -345,6 +350,10 @@ function App() {
 
             <PortfolioAnalytics
               analytics={portfolioAnalytics}
+            />
+
+            <PortfolioAllocation
+              allocation={portfolioAllocation}
             />
 
             <section className="grid gap-6 lg:grid-cols-2">
