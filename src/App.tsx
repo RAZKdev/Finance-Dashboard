@@ -20,6 +20,7 @@ import {
   PortfolioAnalytics,
   PortfolioList,
   PortfolioModal,
+  PortfolioQuality,
 } from './components/portfolio';
 import { MarketList } from './components/markets';
 import { QuickSearch } from './components/search';
@@ -29,6 +30,7 @@ import { marketAssets } from './data/markets';
 import {
   calculatePortfolioAllocation,
   calculatePortfolioAnalytics,
+  calculatePortfolioQuality,
   getPortfolioValue,
 } from './utils/portfolio';
 
@@ -183,6 +185,9 @@ function App() {
 
   const portfolioAllocation =
     calculatePortfolioAllocation(portfolioList);
+
+  const portfolioQuality =
+    calculatePortfolioQuality(portfolioList);
 
   const portfolioValue = portfolioList.reduce(
     (sum, asset) => sum + getPortfolioValue(asset),
@@ -351,6 +356,10 @@ function App() {
             <PortfolioAllocation
               allocation={portfolioAllocation}
               isEmpty={portfolioList.length === 0}
+            />
+
+            <PortfolioQuality
+              quality={portfolioQuality}
             />
 
             <section className="grid gap-6 lg:grid-cols-2">

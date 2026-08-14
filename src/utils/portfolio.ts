@@ -173,6 +173,81 @@ export function calculatePortfolioAnalytics(
   };
 }
 
+export type PortfolioConcentration =
+  | 'low'
+  | 'moderate'
+  | 'high'
+  | 'very-high';
+
+export interface PortfolioQuality {
+  totalAssets: number;
+  assetsWithCompleteMetrics: number;
+  assetsWithoutCompleteMetrics: number;
+  largestHolding: PortfolioAsset | null;
+  largestAllocation: number;
+  concentration: PortfolioConcentration | null;
+}
+
+export function calculatePortfolioQuality(
+  assets: PortfolioAsset[]
+): PortfolioQuality {
+  const completeMetricsCount = assets.filter(
+    (asset) => {
+      const metrics = calculatePortfolioMetrics(asset);
+
+      return (
+        metrics.costBasis !== null &&
+        metrics.marketValue !== null &&
+        metrics.profitLoss !== null &&
+        metrics.profitLossPercent !== null
+      );
+    }
+  ).length;
+
+  const allocation = calculatePortfolioAllocation(assets);
+
+  if (allocation.items.length === 0) {
+    return {
+      totalAssets: assets.length,
+      assetsWithCompleteMetrics: completeMetricsCount,
+      assetsWithoutCompleteMetrics:
+        assets.length - completeMetricsCount,
+      largestHolding: null,
+      largestAllocation: 0,
+      concentration: null,
+    };
+  }
+
+  const largest = allocation.items.reduce(
+    (best, current) =>
+      current.percentage > best.percentage
+        ? current
+        : best
+  );
+
+  let concentration: PortfolioConcentration;
+
+  if (largest.percentage >= 80) {
+    concentration = 'very-high';
+  } else if (largest.percentage >= 60) {
+    concentration = 'high';
+  } else if (largest.percentage >= 40) {
+    concentration = 'moderate';
+  } else {
+    concentration = 'low';
+  }
+
+  return {
+    totalAssets: assets.length,
+    assetsWithCompleteMetrics: completeMetricsCount,
+    assetsWithoutCompleteMetrics:
+      assets.length - completeMetricsCount,
+    largestHolding: largest.asset,
+    largestAllocation: largest.percentage,
+    concentration,
+  };
+}
+
 export interface PortfolioAllocationItem {
   asset: PortfolioAsset;
   value: number;
