@@ -412,8 +412,13 @@ function App() {
 
             <QuickSearch
               value={searchQuery}
+              activeQuery={activeSearchQuery}
               onChange={setSearchQuery}
               onSearch={handleSearch}
+              onClear={() => {
+                setSearchQuery('');
+                setActiveSearchQuery('');
+              }}
             />
           </>
         );
