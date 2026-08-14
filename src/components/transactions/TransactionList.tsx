@@ -6,17 +6,29 @@ interface TransactionListProps {
   transactions: Transaction[];
   onDelete?: (transactionId: string) => void;
   onEdit?: (transaction: Transaction) => void;
+  emptyMessage?: string;
+  emptyDescription?: string;
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   onDelete,
   onEdit,
+  emptyMessage = 'No transactions found.',
+  emptyDescription,
 }) => {
   if (transactions.length === 0) {
     return (
-      <div className="py-8 text-center text-sm text-text-muted">
-        No transactions found.
+      <div className="py-8 text-center">
+        <p className="text-sm font-medium text-text-primary">
+          {emptyMessage}
+        </p>
+
+        {emptyDescription && (
+          <p className="mt-1 text-xs text-text-muted">
+            {emptyDescription}
+          </p>
+        )}
       </div>
     );
   }
@@ -26,7 +38,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       {transactions.map((transaction) => (
         <div
           key={`${transaction.id}-${transaction.title}-${transaction.amount}-${transaction.category}-${transaction.date}-${transaction.type}`}
-          className="flex items-center justify-between gap-4 border-b border-border pb-3 last:border-0"
+          className="flex flex-col gap-3 border-b border-border pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-text-primary">
@@ -38,7 +50,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Badge
               variant={
                 transaction.type === 'income'

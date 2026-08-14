@@ -322,6 +322,16 @@ function App() {
               transactions={filteredTransactions}
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
+              emptyMessage={
+                transactionList.length === 0
+                  ? 'No transactions yet.'
+                  : 'No transactions match your search.'
+              }
+              emptyDescription={
+                transactionList.length === 0
+                  ? 'Add a transaction to start tracking your activity.'
+                  : 'Try a different title, category, type, or date.'
+              }
             />
           </Card>
         );
@@ -386,6 +396,16 @@ function App() {
                   transactions={filteredTransactions}
                   onEdit={handleEditTransaction}
                   onDelete={handleDeleteTransaction}
+                  emptyMessage={
+                    transactionList.length === 0
+                      ? 'No transactions yet.'
+                      : 'No transactions match your search.'
+                  }
+                  emptyDescription={
+                    transactionList.length === 0
+                      ? 'Add a transaction to see your latest activity here.'
+                      : 'Try a different title, category, type, or date.'
+                  }
                 />
               </Card>
             </section>
