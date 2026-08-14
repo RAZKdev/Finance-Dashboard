@@ -24,8 +24,14 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
 
   if (assets.length === 0) {
     return (
-      <div className="py-8 text-center text-sm text-text-muted">
-        No portfolio assets found.
+      <div className="py-8 text-center">
+        <p className="text-sm font-medium text-text-primary">
+          No portfolio assets yet.
+        </p>
+
+        <p className="mt-1 text-xs text-text-muted">
+          Add an asset to start tracking portfolio value and P/L.
+        </p>
       </div>
     );
   }
@@ -57,7 +63,7 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
                 </p>
 
                 {metrics.profitLoss !== null &&
-                  metrics.profitLossPercent !== null && (
+                  metrics.profitLossPercent !== null ? (
                     <p
                       className={`text-xs font-medium tabular-nums ${
                         metrics.profitLoss >= 0
@@ -69,6 +75,10 @@ export const PortfolioList: React.FC<PortfolioListProps> = ({
                       {Math.abs(metrics.profitLoss).toLocaleString('id-ID')}{' '}
                       ({metrics.profitLoss >= 0 ? '+' : ''}
                       {metrics.profitLossPercent.toFixed(2)}%)
+                    </p>
+                  ) : (
+                    <p className="text-xs text-text-muted">
+                      P/L unavailable
                     </p>
                   )}
               </div>

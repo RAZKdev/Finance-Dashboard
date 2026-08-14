@@ -350,6 +350,7 @@ function App() {
 
             <PortfolioAllocation
               allocation={portfolioAllocation}
+              isEmpty={portfolioList.length === 0}
             />
 
             <section className="grid gap-6 lg:grid-cols-2">

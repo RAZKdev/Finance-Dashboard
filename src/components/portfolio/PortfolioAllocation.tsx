@@ -4,6 +4,7 @@ import type { PortfolioAllocation as PortfolioAllocationData } from '../../utils
 
 interface PortfolioAllocationProps {
   allocation: PortfolioAllocationData;
+  isEmpty: boolean;
 }
 
 const formatCurrency = (value: number) =>
@@ -11,7 +12,7 @@ const formatCurrency = (value: number) =>
 
 export const PortfolioAllocation: React.FC<
   PortfolioAllocationProps
-> = ({ allocation }) => {
+> = ({ allocation, isEmpty }) => {
   const {
     totalValue,
     items,
@@ -25,14 +26,24 @@ export const PortfolioAllocation: React.FC<
         description="Current portfolio weight by asset."
       />
 
-      {!complete ? (
+      {isEmpty ? (
         <div className="py-8 text-center">
-          <p className="text-sm text-text-muted">
-            No portfolio allocation data available.
+          <p className="text-sm font-medium text-text-primary">
+            No portfolio assets yet.
           </p>
 
           <p className="mt-1 text-xs text-text-muted">
-            Add portfolio assets with a positive value to see allocation.
+            Add a portfolio asset with a positive value to see allocation.
+          </p>
+        </div>
+      ) : !complete ? (
+        <div className="py-8 text-center">
+          <p className="text-sm font-medium text-text-primary">
+            Allocation metrics are incomplete.
+          </p>
+
+          <p className="mt-1 text-xs text-text-muted">
+            Complete the asset value data to calculate portfolio allocation.
           </p>
         </div>
       ) : (

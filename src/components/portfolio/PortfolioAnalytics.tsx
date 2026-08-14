@@ -24,6 +24,7 @@ export const PortfolioAnalytics: React.FC<
     worstPerformer,
   } = analytics;
 
+  const isEmpty = analytics.totalAssets === 0;
   const hasProfitLoss = totalProfitLoss !== null;
   const hasProfitLossPercent =
     totalProfitLossPercent !== null;
@@ -68,9 +69,11 @@ export const PortfolioAnalytics: React.FC<
               : '—'
           }
           change={
-            completeMetrics
-              ? 'Total invested cost'
-              : 'Incomplete metrics'
+            isEmpty
+              ? 'No portfolio assets'
+              : completeMetrics
+                ? 'Total invested cost'
+                : 'Incomplete metrics'
           }
           trend="neutral"
         />
@@ -83,9 +86,11 @@ export const PortfolioAnalytics: React.FC<
               : '—'
           }
           change={
-            completeMetrics
-              ? 'Current portfolio value'
-              : 'Incomplete metrics'
+            isEmpty
+              ? 'No portfolio assets'
+              : completeMetrics
+                ? 'Current portfolio value'
+                : 'Incomplete metrics'
           }
           trend="neutral"
         />
@@ -94,9 +99,11 @@ export const PortfolioAnalytics: React.FC<
           label="Total P/L"
           value={profitLossValue}
           change={
-            hasProfitLoss
-              ? 'Across all assets'
-              : 'Incomplete metrics'
+            isEmpty
+              ? 'No portfolio assets'
+              : hasProfitLoss
+                ? 'Across all assets'
+                : 'Incomplete metrics'
           }
           trend={profitLossTrend}
         />
@@ -105,9 +112,11 @@ export const PortfolioAnalytics: React.FC<
           label="P/L %"
           value={profitLossPercentValue}
           change={
-            hasProfitLossPercent
-              ? 'Portfolio return'
-              : 'Incomplete metrics'
+            isEmpty
+              ? 'No portfolio assets'
+              : hasProfitLossPercent
+                ? 'Portfolio return'
+                : 'Incomplete metrics'
           }
           trend={profitLossTrend}
         />
@@ -126,7 +135,9 @@ export const PortfolioAnalytics: React.FC<
                   Best Performer
                 </p>
                 <p className="mt-1 text-sm font-semibold text-text-primary">
-                  {performerValue(bestPerformer)}
+                  {isEmpty
+                    ? 'No assets yet'
+                    : performerValue(bestPerformer)}
                 </p>
               </div>
 
@@ -135,7 +146,9 @@ export const PortfolioAnalytics: React.FC<
                   Worst Performer
                 </p>
                 <p className="mt-1 text-sm font-semibold text-text-primary">
-                  {performerValue(worstPerformer)}
+                  {isEmpty
+                    ? 'No assets yet'
+                    : performerValue(worstPerformer)}
                 </p>
               </div>
             </div>
@@ -144,23 +157,31 @@ export const PortfolioAnalytics: React.FC<
           <div className="shrink-0">
             <p
               className={`text-xs font-medium ${
-                completeMetrics
-                  ? 'text-positive'
-                  : 'text-text-muted'
+                isEmpty || !completeMetrics
+                  ? 'text-text-muted'
+                  : 'text-positive'
               }`}
             >
-              {completeMetrics
-                ? 'All portfolio metrics available'
-                : `${assetsWithMetrics}/${analytics.totalAssets} assets with complete metrics`}
+              {isEmpty
+                ? 'Portfolio is empty'
+                : completeMetrics
+                  ? 'All portfolio metrics available'
+                  : `${assetsWithMetrics}/${analytics.totalAssets} assets with complete metrics`}
             </p>
 
-            {!completeMetrics &&
+            {isEmpty ? (
+              <p className="mt-1 text-xs text-text-muted">
+                Add a portfolio asset to start tracking analytics.
+              </p>
+            ) : (
+              !completeMetrics &&
               assetsWithoutMetrics > 0 && (
                 <p className="mt-1 text-xs text-text-muted">
                   Add quantity, average buy price, and current
                   price to complete analytics.
                 </p>
-              )}
+              )
+            )}
           </div>
         </div>
       </div>
