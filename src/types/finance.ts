@@ -20,3 +20,18 @@ export interface PortfolioAsset {
   currentPrice?: number;
   currency?: string;
 }
+
+export type AccountType =
+  | 'cash'
+  | 'bank'
+  | 'ewallet'
+  | 'other';
+
+export interface Account {
+  id: string;
+  name: string;
+  type: AccountType;
+  balance: number;
+  currency: string;
+  createdAt: string;
+}
