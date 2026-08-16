@@ -5,7 +5,13 @@ interface NavigationProps {
   onTabChange: (tab: string) => void;
 }
 
-const tabs = ['Overview', 'Portfolio', 'Markets', 'Transactions'];
+const tabs = [
+  'Overview',
+  'Accounts',
+  'Portfolio',
+  'Markets',
+  'Transactions',
+];
 
 export const Navigation: React.FC<NavigationProps> = ({
   activeTab,

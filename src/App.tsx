@@ -9,6 +9,10 @@ import {
   TransactionList,
   TransactionModal,
 } from './components/transactions';
+import {
+  AccountList,
+  AccountModal,
+} from './components/accounts';
 import type {
   Account,
   PortfolioAsset,
@@ -29,8 +33,11 @@ import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
 import { accounts } from './data/accounts';
 import {
+  createAccount,
+  deleteAccount,
   loadAccounts,
   saveAccounts,
+  updateAccount,
 } from './utils/accounts';
 import { marketAssets } from './data/markets';
 import {
@@ -127,8 +134,14 @@ function App() {
   const [transactionList, setTransactionList] =
     useState<Transaction[]>(loadTransactions);
 
-  const [accountList] =
+  const [accountList, setAccountList] =
     useState<Account[]>(() => loadAccounts(accounts));
+
+  const [editingAccount, setEditingAccount] =
+    useState<Account | null>(null);
+
+  const [isAccountModalOpen, setIsAccountModalOpen] =
+    useState(false);
 
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -258,6 +271,37 @@ function App() {
     );
   };
 
+  const handleSaveAccount = (account: Account) => {
+    setAccountList((current) => {
+      const result = editingAccount
+        ? updateAccount(current, account)
+        : createAccount(current, account);
+
+      return result.success ? result.accounts : current;
+    });
+
+    setIsAccountModalOpen(false);
+    setEditingAccount(null);
+  };
+
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setIsAccountModalOpen(true);
+  };
+
+  const handleDeleteAccount = (accountId: string) => {
+    setAccountList((current) => {
+      const result = deleteAccount(current, accountId);
+
+      return result.success ? result.accounts : current;
+    });
+  };
+
+  const openAddAccount = () => {
+    setEditingAccount(null);
+    setIsAccountModalOpen(true);
+  };
+
   const handleSavePortfolio = (
     asset: PortfolioAsset
   ) => {
@@ -307,6 +351,22 @@ function App() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'Accounts':
+        return (
+          <Card>
+            <SectionHeader
+              title="Accounts"
+              description="Manage your cash, bank, and e-wallet accounts."
+            />
+
+            <AccountList
+              accounts={accountList}
+              onEdit={handleEditAccount}
+              onDelete={handleDeleteAccount}
+            />
+          </Card>
+        );
+
       case 'Portfolio':
         return (
           <Card>
@@ -475,6 +535,13 @@ function App() {
               >
                 + Add Asset
               </Button>
+            ) : activeTab === 'Accounts' ? (
+              <Button
+                size="sm"
+                onClick={openAddAccount}
+              >
+                + Add Account
+              </Button>
             ) : (
               <Button
                 size="sm"
@@ -509,6 +576,16 @@ function App() {
         }}
         onSubmit={handleSavePortfolio}
         initialData={editingPortfolioAsset}
+      />
+
+      <AccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => {
+          setIsAccountModalOpen(false);
+          setEditingAccount(null);
+        }}
+        onSubmit={handleSaveAccount}
+        initialData={editingAccount}
       />
     </div>
   );
