@@ -57,6 +57,114 @@ export function validateAccount(
   };
 }
 
+export interface AccountMutationResult {
+  success: boolean;
+  accounts: Account[];
+  errors: string[];
+}
+
+export function createAccount(
+  accountList: Account[],
+  account: Account
+): AccountMutationResult {
+  const validation = validateAccount(account);
+
+  if (!validation.valid) {
+    return {
+      success: false,
+      accounts: accountList,
+      errors: validation.errors,
+    };
+  }
+
+  if (
+    accountList.some(
+      (existing) => existing.id === account.id
+    )
+  ) {
+    return {
+      success: false,
+      accounts: accountList,
+      errors: ['Account id already exists.'],
+    };
+  }
+
+  return {
+    success: true,
+    accounts: [...accountList, account],
+    errors: [],
+  };
+}
+
+export function updateAccount(
+  accountList: Account[],
+  updatedAccount: Account
+): AccountMutationResult {
+  const validation = validateAccount(updatedAccount);
+
+  if (!validation.valid) {
+    return {
+      success: false,
+      accounts: accountList,
+      errors: validation.errors,
+    };
+  }
+
+  const index = accountList.findIndex(
+    (account) => account.id === updatedAccount.id
+  );
+
+  if (index === -1) {
+    return {
+      success: false,
+      accounts: accountList,
+      errors: ['Account not found.'],
+    };
+  }
+
+  const nextAccounts = [...accountList];
+  nextAccounts[index] = updatedAccount;
+
+  return {
+    success: true,
+    accounts: nextAccounts,
+    errors: [],
+  };
+}
+
+export function deleteAccount(
+  accountList: Account[],
+  accountId: string
+): AccountMutationResult {
+  if (!accountId.trim()) {
+    return {
+      success: false,
+      accounts: accountList,
+      errors: ['Account id is required.'],
+    };
+  }
+
+  const exists = accountList.some(
+    (account) => account.id === accountId
+  );
+
+  if (!exists) {
+    return {
+      success: false,
+      accounts: accountList,
+      errors: ['Account not found.'],
+    };
+  }
+
+  return {
+    success: true,
+    accounts: accountList.filter(
+      (account) => account.id !== accountId
+    ),
+    errors: [],
+  };
+}
+
 export function calculateAccountBalance(
   account: Account
 ): number {
