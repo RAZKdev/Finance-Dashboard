@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { Button, Input } from '../ui';
-import type { Transaction, TransactionType } from '../../types/finance';
+import type {
+  Account,
+  Transaction,
+  TransactionType,
+} from '../../types/finance';
 
 interface TransactionFormProps {
   onSubmit: (transaction: Transaction) => void;
   onCancel?: () => void;
   initialData?: Transaction | null;
+  accounts: Account[];
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   onSubmit,
   onCancel,
   initialData,
+  accounts,
 }) => {
   const [type, setType] = useState<TransactionType>(
     initialData?.type ?? 'expense'
@@ -21,6 +27,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     initialData ? String(initialData.amount) : ''
   );
   const [category, setCategory] = useState(initialData?.category ?? '');
+
+  const [accountId, setAccountId] = useState(
+    initialData?.accountId ??
+      accounts[0]?.id ??
+      ''
+  );
+
   const [date, setDate] = useState(
     initialData?.date ?? new Date().toISOString().split('T')[0]
   );
@@ -51,6 +64,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       return;
     }
 
+    if (
+      accountId.trim() &&
+      !accounts.some(
+        (account) => account.id === accountId.trim()
+      )
+    ) {
+      setError('Selected account no longer exists.');
+      return;
+    }
+
     const transaction: Transaction = {
       id: initialData?.id ?? `tx-${Date.now()}`,
       title: title.trim(),
@@ -58,6 +81,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       type,
       category: category.trim(),
       date,
+      ...(accountId.trim()
+        ? { accountId: accountId.trim() }
+        : {}),
     };
 
     onSubmit(transaction);
@@ -105,6 +131,37 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         value={category}
         onChange={(event) => setCategory(event.target.value)}
       />
+
+      <label className="block space-y-1.5">
+        <span className="block text-xs font-medium uppercase tracking-wider text-text-secondary">
+          Account
+        </span>
+
+        <select
+          value={accountId}
+          onChange={(event) =>
+            setAccountId(event.target.value)
+          }
+          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-focus"
+        >
+          <option value="">
+            No account
+          </option>
+
+          {accounts.map((account) => (
+            <option
+              key={account.id}
+              value={account.id}
+            >
+              {account.name} · {account.currency}
+            </option>
+          ))}
+        </select>
+
+        <p className="text-xs text-text-muted">
+          Link this transaction to a financial account.
+        </p>
+      </label>
 
       <Input
         label="Date"

@@ -46,6 +46,9 @@ import {
   calculatePortfolioQuality,
   getPortfolioValue,
 } from './utils/portfolio';
+import {
+  validateTransaction,
+} from './utils/transactions';
 
 const TRANSACTIONS_STORAGE_KEY =
   'finance-dashboard-transactions-v1';
@@ -53,7 +56,9 @@ const TRANSACTIONS_STORAGE_KEY =
 const PORTFOLIO_STORAGE_KEY =
   'finance-dashboard-portfolio-v1';
 
-const loadTransactions = (): Transaction[] => {
+const loadTransactions = (
+  accountList: Account[]
+): Transaction[] => {
   try {
     const stored = localStorage.getItem(
       TRANSACTIONS_STORAGE_KEY
@@ -69,23 +74,37 @@ const loadTransactions = (): Transaction[] => {
       return transactions;
     }
 
-    return parsed.filter((item): item is Transaction => {
-      if (!item || typeof item !== 'object') {
-        return false;
+    const candidates = parsed.filter(
+      (item): item is Transaction => {
+        if (!item || typeof item !== 'object') {
+          return false;
+        }
+
+        const value = item as Record<string, unknown>;
+
+        return (
+          typeof value.id === 'string' &&
+          typeof value.title === 'string' &&
+          typeof value.amount === 'number' &&
+          (value.type === 'income' ||
+            value.type === 'expense') &&
+          typeof value.category === 'string' &&
+          typeof value.date === 'string' &&
+          (
+            value.accountId === undefined ||
+            typeof value.accountId === 'string'
+          )
+        );
       }
+    );
 
-      const value = item as Record<string, unknown>;
-
-      return (
-        typeof value.id === 'string' &&
-        typeof value.title === 'string' &&
-        typeof value.amount === 'number' &&
-        (value.type === 'income' ||
-          value.type === 'expense') &&
-        typeof value.category === 'string' &&
-        typeof value.date === 'string'
-      );
-    });
+    return candidates.filter(
+      (transaction) =>
+        validateTransaction(
+          transaction,
+          accountList
+        ).valid
+    );
   } catch {
     return transactions;
   }
@@ -131,11 +150,13 @@ function App() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] =
     useState(false);
 
-  const [transactionList, setTransactionList] =
-    useState<Transaction[]>(loadTransactions);
-
   const [accountList, setAccountList] =
     useState<Account[]>(() => loadAccounts(accounts));
+
+  const [transactionList, setTransactionList] =
+    useState<Transaction[]>(() =>
+      loadTransactions(accountList)
+    );
 
   const [editingAccount, setEditingAccount] =
     useState<Account | null>(null);
@@ -241,6 +262,16 @@ function App() {
   const handleSaveTransaction = (
     transaction: Transaction
   ) => {
+    const validation = validateTransaction(
+      transaction,
+      accountList
+    );
+
+    if (!validation.valid) {
+      window.alert(validation.errors.join('\\n'));
+      return;
+    }
+
     if (editingTransaction) {
       setTransactionList((current) =>
         current.map((item) =>
@@ -290,10 +321,27 @@ function App() {
   };
 
   const handleDeleteAccount = (accountId: string) => {
+    const isAccountInUse = transactionList.some(
+      (transaction) =>
+        transaction.accountId === accountId
+    );
+
+    if (isAccountInUse) {
+      window.alert(
+        'This account cannot be deleted because it is linked to one or more transactions.'
+      );
+      return;
+    }
+
     setAccountList((current) => {
       const result = deleteAccount(current, accountId);
 
-      return result.success ? result.accounts : current;
+      if (!result.success) {
+        window.alert(result.errors.join('\\n'));
+        return current;
+      }
+
+      return result.accounts;
     });
   };
 
@@ -566,6 +614,7 @@ function App() {
         }}
         onSubmit={handleSaveTransaction}
         initialData={editingTransaction}
+        accounts={accountList}
       />
 
       <PortfolioModal

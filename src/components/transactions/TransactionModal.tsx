@@ -1,13 +1,17 @@
 import React from 'react';
 import { Button, Card } from '../ui';
 import { TransactionForm } from './TransactionForm';
-import type { Transaction } from '../../types/finance';
+import type {
+  Account,
+  Transaction,
+} from '../../types/finance';
 
 interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (transaction: Transaction) => void;
   initialData?: Transaction | null;
+  accounts: Account[];
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({
@@ -15,6 +19,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   onClose,
   onSubmit,
   initialData,
+  accounts,
 }) => {
   if (!isOpen) {
     return null;
@@ -60,6 +65,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           onSubmit={onSubmit}
           onCancel={onClose}
           initialData={initialData}
+          accounts={accounts}
         />
       </Card>
     </div>
