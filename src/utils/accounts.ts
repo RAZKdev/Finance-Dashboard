@@ -8,6 +8,55 @@ export interface AccountBalanceSummary {
   currentBalance: number;
 }
 
+export interface AccountValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+export function validateAccount(
+  account: Account
+): AccountValidationResult {
+  const errors: string[] = [];
+
+  if (!account.id.trim()) {
+    errors.push('Account id is required.');
+  }
+
+  if (!account.name.trim()) {
+    errors.push('Account name is required.');
+  }
+
+  if (
+    account.type !== 'cash' &&
+    account.type !== 'bank' &&
+    account.type !== 'ewallet' &&
+    account.type !== 'other'
+  ) {
+    errors.push('Account type is invalid.');
+  }
+
+  if (
+    !Number.isFinite(account.openingBalance)
+  ) {
+    errors.push(
+      'Opening balance must be a finite number.'
+    );
+  }
+
+  if (!account.currency.trim()) {
+    errors.push('Currency is required.');
+  }
+
+  if (!account.createdAt.trim()) {
+    errors.push('Created date is required.');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
 export function calculateAccountBalance(
   account: Account
 ): number {
@@ -52,20 +101,33 @@ export function loadAccounts(
 
         const value = item as Record<string, unknown>;
 
-        return (
-          typeof value.id === 'string' &&
-          typeof value.name === 'string' &&
+        if (
+          typeof value.id !== 'string' ||
+          typeof value.name !== 'string' ||
+          typeof value.balance !== 'undefined' ||
           (
-            value.type === 'cash' ||
-            value.type === 'bank' ||
-            value.type === 'ewallet' ||
-            value.type === 'other'
-          ) &&
-          typeof value.openingBalance === 'number' &&
-          Number.isFinite(value.openingBalance) &&
-          typeof value.currency === 'string' &&
-          typeof value.createdAt === 'string'
-        );
+            value.type !== 'cash' &&
+            value.type !== 'bank' &&
+            value.type !== 'ewallet' &&
+            value.type !== 'other'
+          ) ||
+          typeof value.openingBalance !== 'number' ||
+          typeof value.currency !== 'string' ||
+          typeof value.createdAt !== 'string'
+        ) {
+          return false;
+        }
+
+        const account: Account = {
+          id: value.id,
+          name: value.name,
+          type: value.type,
+          openingBalance: value.openingBalance,
+          currency: value.currency,
+          createdAt: value.createdAt,
+        };
+
+        return validateAccount(account).valid;
       }
     );
   } catch {
