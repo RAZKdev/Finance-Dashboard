@@ -10,6 +10,7 @@ import {
   TransactionModal,
 } from './components/transactions';
 import type {
+  Account,
   PortfolioAsset,
   Transaction,
 } from './types/finance';
@@ -26,6 +27,11 @@ import { MarketList } from './components/markets';
 import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
+import { accounts } from './data/accounts';
+import {
+  loadAccounts,
+  saveAccounts,
+} from './utils/accounts';
 import { marketAssets } from './data/markets';
 import {
   calculatePortfolioAllocation,
@@ -121,6 +127,9 @@ function App() {
   const [transactionList, setTransactionList] =
     useState<Transaction[]>(loadTransactions);
 
+  const [accountList] =
+    useState<Account[]>(() => loadAccounts(accounts));
+
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
 
@@ -147,6 +156,10 @@ function App() {
       // Keep the app usable if localStorage is unavailable.
     }
   }, [transactionList]);
+
+  useEffect(() => {
+    saveAccounts(accountList);
+  }, [accountList]);
 
   useEffect(() => {
     try {
