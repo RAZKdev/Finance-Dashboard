@@ -3,6 +3,29 @@ import type { Account } from '../types/finance';
 export const ACCOUNT_STORAGE_KEY =
   'finance-dashboard-accounts-v1';
 
+export interface AccountBalanceSummary {
+  openingBalance: number;
+  currentBalance: number;
+}
+
+export function calculateAccountBalance(
+  account: Account
+): number {
+  return account.openingBalance;
+}
+
+export function calculateAccountBalanceSummary(
+  account: Account
+): AccountBalanceSummary {
+  const currentBalance =
+    calculateAccountBalance(account);
+
+  return {
+    openingBalance: account.openingBalance,
+    currentBalance,
+  };
+}
+
 export function loadAccounts(
   fallback: Account[] = []
 ): Account[] {
@@ -38,8 +61,8 @@ export function loadAccounts(
             value.type === 'ewallet' ||
             value.type === 'other'
           ) &&
-          typeof value.balance === 'number' &&
-          Number.isFinite(value.balance) &&
+          typeof value.openingBalance === 'number' &&
+          Number.isFinite(value.openingBalance) &&
           typeof value.currency === 'string' &&
           typeof value.createdAt === 'string'
         );

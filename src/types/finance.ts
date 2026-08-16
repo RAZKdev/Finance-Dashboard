@@ -31,7 +31,7 @@ export interface Account {
   id: string;
   name: string;
   type: AccountType;
-  balance: number;
+  openingBalance: number;
   currency: string;
   createdAt: string;
 }
