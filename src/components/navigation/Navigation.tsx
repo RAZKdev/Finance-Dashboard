@@ -11,6 +11,8 @@ const tabs = [
   'Portfolio',
   'Markets',
   'Transactions',
+  'Budgets',
+  'Cashflow',
 ];
 
 export const Navigation: React.FC<NavigationProps> = ({

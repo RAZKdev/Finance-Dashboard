@@ -1,12 +1,14 @@
 import React from 'react';
 import { StatCard } from '../ui';
-import type { Transaction } from '../../types/finance';
+import type { Account, Transaction } from '../../types/finance';
+import { calculateTotalCashBalance } from '../../utils/accounts';
 
 interface DashboardStatsProps {
   transactions: Transaction[];
   portfolioValue: number;
   portfolioProfitLoss: number | null;
   portfolioProfitLossPercent: number | null;
+  accounts?: Account[];
 }
 
 const formatCurrency = (value: number) =>
@@ -25,6 +27,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
   portfolioValue,
   portfolioProfitLoss,
   portfolioProfitLossPercent,
+  accounts = [],
 }) => {
   const currentMonth = getCurrentMonth();
 
@@ -40,13 +43,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
     .filter((transaction) => transaction.type === 'expense')
     .reduce((sum, transaction) => sum + transaction.amount, 0);
 
-  const totalBalance = transactions.reduce(
-    (balance, transaction) =>
-      transaction.type === 'income'
-        ? balance + transaction.amount
-        : balance - transaction.amount,
-    0
-  );
+  const totalBalance = calculateTotalCashBalance(accounts, transactions);
 
   const portfolioChange =
     portfolioProfitLoss !== null &&
@@ -59,8 +56,12 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
       <StatCard
         label="Total Balance"
         value={formatCurrency(totalBalance)}
-        change="Current balance"
-        trend="up"
+        change={
+          accounts.length > 0
+            ? `${accounts.length} account${accounts.length > 1 ? 's' : ''}`
+            : 'Current balance'
+        }
+        trend={totalBalance >= 0 ? 'up' : 'down'}
       />
 
       <StatCard

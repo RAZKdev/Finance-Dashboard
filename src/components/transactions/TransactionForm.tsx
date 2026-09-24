@@ -29,9 +29,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [category, setCategory] = useState(initialData?.category ?? '');
 
   const [accountId, setAccountId] = useState(
-    initialData?.accountId ??
-      accounts[0]?.id ??
-      ''
+    initialData
+      ? (initialData.accountId ?? '')
+      : (accounts[0]?.id ?? '')
   );
 
   const [date, setDate] = useState(

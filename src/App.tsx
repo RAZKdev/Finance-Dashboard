@@ -13,13 +13,27 @@ import {
   AccountList,
   AccountModal,
 } from './components/accounts';
+import {
+  BudgetList,
+  BudgetModal,
+} from './components/budgets';
+import {
+  CashflowView,
+  CashflowMiniCard,
+} from './components/cashflow';
+import { BackupModal } from './components/backup';
 import type {
   Account,
+  AppBackupData,
+  Budget,
   PortfolioAsset,
   Transaction,
 } from './types/finance';
 import { Navigation } from './components/navigation';
-import { DashboardStats } from './components/dashboard';
+import {
+  DashboardStats,
+  BudgetOverviewCard,
+} from './components/dashboard';
 import {
   PortfolioAllocation,
   PortfolioAnalytics,
@@ -32,6 +46,7 @@ import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
 import { accounts } from './data/accounts';
+import { budgets } from './data/budgets';
 import {
   createAccount,
   deleteAccount,
@@ -39,6 +54,13 @@ import {
   saveAccounts,
   updateAccount,
 } from './utils/accounts';
+import {
+  createBudget,
+  deleteBudget,
+  loadBudgets,
+  saveBudgets,
+  updateBudget,
+} from './utils/budgets';
 import { marketAssets } from './data/markets';
 import {
   calculatePortfolioAllocation,
@@ -126,19 +148,78 @@ const loadPortfolio = (): PortfolioAsset[] => {
       return portfolioAssets;
     }
 
-    return parsed.filter((item): item is PortfolioAsset => {
+    const validAssets: PortfolioAsset[] = [];
+
+    for (const item of parsed) {
       if (!item || typeof item !== 'object') {
-        return false;
+        continue;
       }
 
       const value = item as Record<string, unknown>;
 
-      return (
-        typeof value.id === 'string' &&
-        typeof value.name === 'string' &&
-        typeof value.value === 'number'
-      );
-    });
+      if (
+        typeof value.id !== 'string' ||
+        !value.id.trim() ||
+        typeof value.name !== 'string' ||
+        !value.name.trim() ||
+        typeof value.value !== 'number' ||
+        !Number.isFinite(value.value) ||
+        value.value <= 0
+      ) {
+        continue;
+      }
+
+      const asset: PortfolioAsset = {
+        id: value.id.trim(),
+        name: value.name.trim(),
+        value: value.value,
+      };
+
+      if (typeof value.symbol === 'string' && value.symbol.trim()) {
+        asset.symbol = value.symbol.trim();
+      }
+
+      if (
+        value.assetType === 'stock' ||
+        value.assetType === 'crypto' ||
+        value.assetType === 'forex' ||
+        value.assetType === 'cash'
+      ) {
+        asset.assetType = value.assetType;
+      }
+
+      if (
+        typeof value.quantity === 'number' &&
+        Number.isFinite(value.quantity) &&
+        value.quantity > 0
+      ) {
+        asset.quantity = value.quantity;
+      }
+
+      if (
+        typeof value.averageBuyPrice === 'number' &&
+        Number.isFinite(value.averageBuyPrice) &&
+        value.averageBuyPrice > 0
+      ) {
+        asset.averageBuyPrice = value.averageBuyPrice;
+      }
+
+      if (
+        typeof value.currentPrice === 'number' &&
+        Number.isFinite(value.currentPrice) &&
+        value.currentPrice > 0
+      ) {
+        asset.currentPrice = value.currentPrice;
+      }
+
+      if (typeof value.currency === 'string' && value.currency.trim()) {
+        asset.currency = value.currency.trim();
+      }
+
+      validAssets.push(asset);
+    }
+
+    return validAssets;
   } catch {
     return portfolioAssets;
   }
@@ -180,6 +261,19 @@ function App() {
   const [activeSearchQuery, setActiveSearchQuery] =
     useState('');
 
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [budgetList, setBudgetList] = useState<Budget[]>(() =>
+    loadBudgets(budgets)
+  );
+  const [editingBudget, setEditingBudget] =
+    useState<Budget | null>(null);
+  const [isBudgetModalOpen, setIsBudgetModalOpen] =
+    useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] =
+    useState(false);
+  const [selectedBudgetMonth, setSelectedBudgetMonth] =
+    useState<string>(currentMonth);
+
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -205,6 +299,10 @@ function App() {
       // Keep the app usable if localStorage is unavailable.
     }
   }, [portfolioList]);
+
+  useEffect(() => {
+    saveBudgets(budgetList);
+  }, [budgetList]);
 
   const filteredTransactions = transactionList.filter(
     (transaction) => {
@@ -397,6 +495,58 @@ function App() {
     setIsTransactionModalOpen(true);
   };
 
+  const handleSaveBudget = (budget: Budget) => {
+    setBudgetList((current) => {
+      const result = editingBudget
+        ? updateBudget(current, budget)
+        : createBudget(current, budget);
+
+      if (!result.success) {
+        window.alert(result.errors.join('\n'));
+        return current;
+      }
+
+      return result.budgets;
+    });
+
+    setIsBudgetModalOpen(false);
+    setEditingBudget(null);
+  };
+
+  const handleEditBudget = (budget: Budget) => {
+    setEditingBudget(budget);
+    setIsBudgetModalOpen(true);
+  };
+
+  const handleDeleteBudget = (budgetId: string) => {
+    setBudgetList((current) => {
+      const result = deleteBudget(current, budgetId);
+
+      if (!result.success) {
+        window.alert(result.errors.join('\n'));
+        return current;
+      }
+
+      return result.budgets;
+    });
+  };
+
+  const openAddBudget = () => {
+    setEditingBudget(null);
+    setIsBudgetModalOpen(true);
+  };
+
+  const handleRestoreBackup = (data: AppBackupData) => {
+    setAccountList(data.accounts);
+    setTransactionList(data.transactions);
+    setPortfolioList(data.portfolio);
+    setBudgetList(data.budgets);
+  };
+
+  const existingCategories = Array.from(
+    new Set(transactionList.map((t) => t.category).filter(Boolean))
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Accounts':
@@ -409,6 +559,7 @@ function App() {
 
             <AccountList
               accounts={accountList}
+              transactions={transactionList}
               onEdit={handleEditAccount}
               onDelete={handleDeleteAccount}
             />
@@ -441,6 +592,7 @@ function App() {
 
             <TransactionList
               transactions={filteredTransactions}
+              accounts={accountList}
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
               emptyMessage={
@@ -469,6 +621,42 @@ function App() {
           </Card>
         );
 
+      case 'Budgets':
+        return (
+          <Card>
+            <SectionHeader
+              title="Budget Realization"
+              description="Monthly spending limits vs actual transaction expenses by category."
+            />
+
+            <BudgetList
+              budgets={budgetList}
+              transactions={transactionList}
+              selectedMonth={selectedBudgetMonth}
+              onMonthChange={setSelectedBudgetMonth}
+              onEdit={handleEditBudget}
+              onDelete={handleDeleteBudget}
+              onAdd={openAddBudget}
+            />
+          </Card>
+        );
+
+      case 'Cashflow':
+        return (
+          <Card>
+            <SectionHeader
+              title="Cashflow Analytics"
+              description="Monthly income versus expenses comparison and category spending shifts."
+            />
+
+            <CashflowView
+              transactions={transactionList}
+              selectedMonth={selectedBudgetMonth}
+              onMonthChange={setSelectedBudgetMonth}
+            />
+          </Card>
+        );
+
       case 'Overview':
       default:
         return (
@@ -478,6 +666,20 @@ function App() {
               portfolioValue={portfolioValue}
               portfolioProfitLoss={portfolioProfitLoss}
               portfolioProfitLossPercent={portfolioProfitLossPercent}
+              accounts={accountList}
+            />
+
+            <CashflowMiniCard
+              transactions={transactionList}
+              currentMonth={selectedBudgetMonth}
+              onNavigateToCashflow={() => setActiveTab('Cashflow')}
+            />
+
+            <BudgetOverviewCard
+              budgets={budgetList}
+              transactions={transactionList}
+              currentMonth={selectedBudgetMonth}
+              onNavigateToBudgets={() => setActiveTab('Budgets')}
             />
 
             <PortfolioAnalytics
@@ -515,6 +717,7 @@ function App() {
 
                 <TransactionList
                   transactions={filteredTransactions}
+                  accounts={accountList}
                   onEdit={handleEditTransaction}
                   onDelete={handleDeleteTransaction}
                   emptyMessage={
@@ -560,9 +763,19 @@ function App() {
             </p>
           </div>
 
-          <Badge variant="positive">
-            Market Open
-          </Badge>
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsBackupModalOpen(true)}
+            >
+              Export / Restore
+            </Button>
+
+            <Badge variant="default">
+              Simulated Data
+            </Badge>
+          </div>
         </div>
       </header>
 
@@ -589,6 +802,13 @@ function App() {
                 onClick={openAddAccount}
               >
                 + Add Account
+              </Button>
+            ) : activeTab === 'Budgets' ? (
+              <Button
+                size="sm"
+                onClick={openAddBudget}
+              >
+                + Add Budget
               </Button>
             ) : (
               <Button
@@ -635,6 +855,28 @@ function App() {
         }}
         onSubmit={handleSaveAccount}
         initialData={editingAccount}
+      />
+
+      <BudgetModal
+        isOpen={isBudgetModalOpen}
+        onClose={() => {
+          setIsBudgetModalOpen(false);
+          setEditingBudget(null);
+        }}
+        onSubmit={handleSaveBudget}
+        initialData={editingBudget}
+        existingCategories={existingCategories}
+        defaultMonth={selectedBudgetMonth}
+      />
+
+      <BackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        accounts={accountList}
+        transactions={transactionList}
+        portfolio={portfolioList}
+        budgets={budgetList}
+        onRestore={handleRestoreBackup}
       />
     </div>
   );

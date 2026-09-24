@@ -1,4 +1,4 @@
-import type { Account } from '../types/finance';
+import type { Account, Transaction } from '../types/finance';
 
 export const ACCOUNT_STORAGE_KEY =
   'finance-dashboard-accounts-v1';
@@ -6,6 +6,9 @@ export const ACCOUNT_STORAGE_KEY =
 export interface AccountBalanceSummary {
   openingBalance: number;
   currentBalance: number;
+  totalIncome: number;
+  totalExpense: number;
+  netChange: number;
 }
 
 export interface AccountValidationResult {
@@ -18,11 +21,11 @@ export function validateAccount(
 ): AccountValidationResult {
   const errors: string[] = [];
 
-  if (!account.id.trim()) {
+  if (typeof account.id !== 'string' || !account.id.trim()) {
     errors.push('Account id is required.');
   }
 
-  if (!account.name.trim()) {
+  if (typeof account.name !== 'string' || !account.name.trim()) {
     errors.push('Account name is required.');
   }
 
@@ -36,6 +39,7 @@ export function validateAccount(
   }
 
   if (
+    typeof account.openingBalance !== 'number' ||
     !Number.isFinite(account.openingBalance)
   ) {
     errors.push(
@@ -43,11 +47,11 @@ export function validateAccount(
     );
   }
 
-  if (!account.currency.trim()) {
+  if (typeof account.currency !== 'string' || !account.currency.trim()) {
     errors.push('Currency is required.');
   }
 
-  if (!account.createdAt.trim()) {
+  if (typeof account.createdAt !== 'string' || !account.createdAt.trim()) {
     errors.push('Created date is required.');
   }
 
@@ -166,21 +170,70 @@ export function deleteAccount(
 }
 
 export function calculateAccountBalance(
-  account: Account
+  account: Account,
+  transactions: Transaction[] = []
 ): number {
-  return account.openingBalance;
+  const linkedTransactions = transactions.filter(
+    (tx) => tx.accountId === account.id
+  );
+
+  const netChange = linkedTransactions.reduce((acc, tx) => {
+    if (tx.type === 'income') {
+      return acc + tx.amount;
+    }
+    if (tx.type === 'expense') {
+      return acc - tx.amount;
+    }
+    return acc;
+  }, 0);
+
+  return account.openingBalance + netChange;
 }
 
 export function calculateAccountBalanceSummary(
-  account: Account
+  account: Account,
+  transactions: Transaction[] = []
 ): AccountBalanceSummary {
-  const currentBalance =
-    calculateAccountBalance(account);
+  const linkedTransactions = transactions.filter(
+    (tx) => tx.accountId === account.id
+  );
+
+  const totalIncome = linkedTransactions
+    .filter((tx) => tx.type === 'income')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const totalExpense = linkedTransactions
+    .filter((tx) => tx.type === 'expense')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const netChange = totalIncome - totalExpense;
+  const currentBalance = account.openingBalance + netChange;
 
   return {
     openingBalance: account.openingBalance,
     currentBalance,
+    totalIncome,
+    totalExpense,
+    netChange,
   };
+}
+
+export function calculateTotalCashBalance(
+  accounts: Account[],
+  transactions: Transaction[] = []
+): number {
+  const totalOpening = accounts.reduce(
+    (sum, acc) => sum + acc.openingBalance,
+    0
+  );
+
+  const totalNet = transactions.reduce(
+    (sum, tx) =>
+      tx.type === 'income' ? sum + tx.amount : sum - tx.amount,
+    0
+  );
+
+  return totalOpening + totalNet;
 }
 
 export function loadAccounts(
@@ -201,43 +254,54 @@ export function loadAccounts(
       return fallback;
     }
 
-    return parsed.filter(
-      (item): item is Account => {
-        if (!item || typeof item !== 'object') {
-          return false;
-        }
+    const accounts: Account[] = [];
 
-        const value = item as Record<string, unknown>;
-
-        if (
-          typeof value.id !== 'string' ||
-          typeof value.name !== 'string' ||
-          typeof value.balance !== 'undefined' ||
-          (
-            value.type !== 'cash' &&
-            value.type !== 'bank' &&
-            value.type !== 'ewallet' &&
-            value.type !== 'other'
-          ) ||
-          typeof value.openingBalance !== 'number' ||
-          typeof value.currency !== 'string' ||
-          typeof value.createdAt !== 'string'
-        ) {
-          return false;
-        }
-
-        const account: Account = {
-          id: value.id,
-          name: value.name,
-          type: value.type,
-          openingBalance: value.openingBalance,
-          currency: value.currency,
-          createdAt: value.createdAt,
-        };
-
-        return validateAccount(account).valid;
+    for (const item of parsed) {
+      if (!item || typeof item !== 'object') {
+        continue;
       }
-    );
+
+      const value = item as Record<string, unknown>;
+
+      // Support legacy schema migration if 'openingBalance' is missing but 'balance' was present
+      const resolvedOpeningBalance =
+        typeof value.openingBalance === 'number'
+          ? value.openingBalance
+          : typeof value.balance === 'number'
+            ? value.balance
+            : NaN;
+
+      if (
+        typeof value.id !== 'string' ||
+        typeof value.name !== 'string' ||
+        (
+          value.type !== 'cash' &&
+          value.type !== 'bank' &&
+          value.type !== 'ewallet' &&
+          value.type !== 'other'
+        ) ||
+        !Number.isFinite(resolvedOpeningBalance) ||
+        typeof value.currency !== 'string' ||
+        typeof value.createdAt !== 'string'
+      ) {
+        continue;
+      }
+
+      const account: Account = {
+        id: value.id,
+        name: value.name,
+        type: value.type,
+        openingBalance: resolvedOpeningBalance,
+        currency: value.currency,
+        createdAt: value.createdAt,
+      };
+
+      if (validateAccount(account).valid) {
+        accounts.push(account);
+      }
+    }
+
+    return accounts;
   } catch {
     return fallback;
   }

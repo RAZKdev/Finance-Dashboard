@@ -14,16 +14,16 @@ export function validateTransaction(
 ): TransactionValidationResult {
   const errors: string[] = [];
 
-  if (!transaction.id.trim()) {
+  if (typeof transaction.id !== 'string' || !transaction.id.trim()) {
     errors.push('Transaction id is required.');
   }
 
-  if (!transaction.title.trim()) {
+  if (typeof transaction.title !== 'string' || !transaction.title.trim()) {
     errors.push('Transaction title is required.');
   }
 
-  if (!Number.isFinite(transaction.amount)) {
-    errors.push('Transaction amount must be a finite number.');
+  if (typeof transaction.amount !== 'number' || !Number.isFinite(transaction.amount) || transaction.amount <= 0) {
+    errors.push('Transaction amount must be a number greater than 0.');
   }
 
   if (
@@ -33,11 +33,11 @@ export function validateTransaction(
     errors.push('Transaction type is invalid.');
   }
 
-  if (!transaction.category.trim()) {
+  if (typeof transaction.category !== 'string' || !transaction.category.trim()) {
     errors.push('Transaction category is required.');
   }
 
-  if (!transaction.date.trim()) {
+  if (typeof transaction.date !== 'string' || !transaction.date.trim()) {
     errors.push('Transaction date is required.');
   }
 
@@ -48,7 +48,10 @@ export function validateTransaction(
    * But when accountId exists, it must reference a real account.
    */
   if (transaction.accountId !== undefined) {
-    const accountId = transaction.accountId.trim();
+    const accountId =
+      typeof transaction.accountId === 'string'
+        ? transaction.accountId.trim()
+        : '';
 
     if (!accountId) {
       errors.push('Account id cannot be empty.');

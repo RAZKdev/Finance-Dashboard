@@ -68,6 +68,10 @@ const MarketDetail: React.FC<{
                 <span className="rounded-md bg-background px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
                   {typeLabel[asset.type]}
                 </span>
+
+                <span className="rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                  Simulated Snapshot
+                </span>
               </div>
 
               <p className="mt-1 text-sm text-text-muted">
@@ -261,6 +265,13 @@ export const MarketList: React.FC<MarketListProps> = ({
           placeholder="Search symbol, asset name, or type..."
           className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
+      </div>
+
+      <div className="flex items-center justify-between gap-2 text-xs text-text-muted">
+        <p>Simulated market snapshot · Provider integration inactive</p>
+        <span className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
+          Demo
+        </span>
       </div>
 
       <div className="flex flex-col gap-3">

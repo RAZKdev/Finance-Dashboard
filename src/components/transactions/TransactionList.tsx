@@ -1,9 +1,10 @@
 import React from 'react';
 import { Badge, Button } from '../ui';
-import type { Transaction } from '../../types/finance';
+import type { Account, Transaction } from '../../types/finance';
 
 interface TransactionListProps {
   transactions: Transaction[];
+  accounts?: Account[];
   onDelete?: (transactionId: string) => void;
   onEdit?: (transaction: Transaction) => void;
   emptyMessage?: string;
@@ -12,6 +13,7 @@ interface TransactionListProps {
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
+  accounts,
   onDelete,
   onEdit,
   emptyMessage = 'No transactions found.',
@@ -35,20 +37,26 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
   return (
     <div className="space-y-4">
-      {transactions.map((transaction) => (
-        <div
-          key={`${transaction.id}-${transaction.title}-${transaction.amount}-${transaction.category}-${transaction.date}-${transaction.type}`}
-          className="flex flex-col gap-3 border-b border-border pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-text-primary">
-              {transaction.title}
-            </p>
+      {transactions.map((transaction) => {
+        const account = accounts?.find(
+          (acc) => acc.id === transaction.accountId
+        );
 
-            <p className="text-xs text-text-muted">
-              {transaction.category} · {transaction.date}
-            </p>
-          </div>
+        return (
+          <div
+            key={transaction.id}
+            className="flex flex-col gap-3 border-b border-border pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-text-primary">
+                {transaction.title}
+              </p>
+
+              <p className="text-xs text-text-muted">
+                {transaction.category} · {transaction.date}
+                {account ? ` · ${account.name}` : ''}
+              </p>
+            </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Badge
@@ -95,7 +103,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             )}
           </div>
         </div>
-      ))}
+      );
+    })}
     </div>
   );
 };

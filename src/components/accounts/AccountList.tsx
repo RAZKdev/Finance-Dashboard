@@ -1,16 +1,18 @@
 import React from 'react';
 import { Button } from '../ui';
-import type { Account } from '../../types/finance';
-import { calculateAccountBalance } from '../../utils/accounts';
+import type { Account, Transaction } from '../../types/finance';
+import { calculateAccountBalanceSummary } from '../../utils/accounts';
 
 interface AccountListProps {
   accounts: Account[];
+  transactions?: Transaction[];
   onEdit?: (account: Account) => void;
   onDelete?: (accountId: string) => void;
 }
 
 export const AccountList: React.FC<AccountListProps> = ({
   accounts,
+  transactions = [],
   onEdit,
   onDelete,
 }) => {
@@ -31,8 +33,8 @@ export const AccountList: React.FC<AccountListProps> = ({
   return (
     <div className="space-y-4">
       {accounts.map((account) => {
-        const currentBalance =
-          calculateAccountBalance(account);
+        const summary =
+          calculateAccountBalanceSummary(account, transactions);
 
         return (
           <div
@@ -53,11 +55,13 @@ export const AccountList: React.FC<AccountListProps> = ({
               <div className="text-right">
                 <p className="text-sm font-semibold tabular-nums">
                   {account.currency}{' '}
-                  {currentBalance.toLocaleString('id-ID')}
+                  {summary.currentBalance.toLocaleString('id-ID')}
                 </p>
 
                 <p className="text-xs text-text-muted">
-                  Current balance
+                  {summary.netChange !== 0
+                    ? `${summary.netChange > 0 ? '+' : ''}${account.currency} ${summary.netChange.toLocaleString('id-ID')} activity`
+                    : 'Current balance'}
                 </p>
               </div>
 

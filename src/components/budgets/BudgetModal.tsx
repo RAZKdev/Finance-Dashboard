@@ -1,25 +1,24 @@
 import React, { useEffect } from 'react';
 import { Button, Card } from '../ui';
-import { TransactionForm } from './TransactionForm';
-import type {
-  Account,
-  Transaction,
-} from '../../types/finance';
+import { BudgetForm } from './BudgetForm';
+import type { Budget } from '../../types/finance';
 
-interface TransactionModalProps {
+interface BudgetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (transaction: Transaction) => void;
-  initialData?: Transaction | null;
-  accounts: Account[];
+  onSubmit: (budget: Budget) => void;
+  initialData?: Budget | null;
+  existingCategories?: string[];
+  defaultMonth?: string;
 }
 
-export const TransactionModal: React.FC<TransactionModalProps> = ({
+export const BudgetModal: React.FC<BudgetModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
   initialData,
-  accounts,
+  existingCategories,
+  defaultMonth,
 }) => {
   useEffect(() => {
     if (!isOpen) {
@@ -43,12 +42,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     return null;
   }
 
+  const isEditing = Boolean(initialData);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="transaction-modal-title"
+      aria-labelledby="budget-modal-title"
       onClick={onClose}
     >
       <Card
@@ -58,16 +59,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <h2
-              id="transaction-modal-title"
+              id="budget-modal-title"
               className="text-lg font-semibold"
             >
-              {initialData ? 'Edit Transaction' : 'Add Transaction'}
+              {isEditing ? 'Edit Budget' : 'Add Monthly Budget'}
             </h2>
 
             <p className="text-sm text-text-muted">
-              {initialData
-                ? 'Update the transaction details.'
-                : 'Record a new income or expense.'}
+              {isEditing
+                ? 'Update your category spending limit.'
+                : 'Set a spending target for a category.'}
             </p>
           </div>
 
@@ -76,18 +77,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            aria-label="Close transaction modal"
+            aria-label="Close budget modal"
           >
             ✕
           </Button>
         </div>
 
-        <TransactionForm
+        <BudgetForm
           key={initialData?.id ?? 'new'}
           onSubmit={onSubmit}
           onCancel={onClose}
           initialData={initialData}
-          accounts={accounts}
+          existingCategories={existingCategories}
+          defaultMonth={defaultMonth}
         />
       </Card>
     </div>
