@@ -8,6 +8,8 @@ export interface MarketAsset {
   price: number;
   changePercent: number;
   currency: string;
+  lastUpdated?: string;
+  isLive?: boolean;
 }
 
 export const marketAssets: MarketAsset[] = [
@@ -16,8 +18,8 @@ export const marketAssets: MarketAsset[] = [
     symbol: 'BBCA',
     name: 'Bank Central Asia',
     type: 'stock',
-    price: 8750,
-    changePercent: 1.24,
+    price: 6225,
+    changePercent: -1.19,
     currency: 'IDR',
   },
   {
@@ -25,8 +27,26 @@ export const marketAssets: MarketAsset[] = [
     symbol: 'BMRI',
     name: 'Bank Mandiri',
     type: 'stock',
-    price: 5325,
-    changePercent: -0.56,
+    price: 4070,
+    changePercent: -2.86,
+    currency: 'IDR',
+  },
+  {
+    id: 'bbri',
+    symbol: 'BBRI',
+    name: 'Bank Rakyat Indonesia',
+    type: 'stock',
+    price: 3140,
+    changePercent: -1.57,
+    currency: 'IDR',
+  },
+  {
+    id: 'tlkm',
+    symbol: 'TLKM',
+    name: 'Telkom Indonesia',
+    type: 'stock',
+    price: 2410,
+    changePercent: -1.23,
     currency: 'IDR',
   },
   {
@@ -34,8 +54,8 @@ export const marketAssets: MarketAsset[] = [
     symbol: 'BTC',
     name: 'Bitcoin',
     type: 'crypto',
-    price: 118500,
-    changePercent: 2.18,
+    price: 84450,
+    changePercent: -0.05,
     currency: 'USD',
   },
   {
@@ -43,9 +63,36 @@ export const marketAssets: MarketAsset[] = [
     symbol: 'ETH',
     name: 'Ethereum',
     type: 'crypto',
-    price: 4310,
-    changePercent: -1.12,
+    price: 2690,
+    changePercent: 0.26,
     currency: 'USD',
+  },
+  {
+    id: 'usdidr',
+    symbol: 'USDIDR',
+    name: 'US Dollar / Indonesian Rupiah',
+    type: 'forex',
+    price: 17835,
+    changePercent: 0.12,
+    currency: 'IDR',
+  },
+  {
+    id: 'eurusd',
+    symbol: 'EURUSD',
+    name: 'Euro / US Dollar',
+    type: 'forex',
+    price: 1.1397,
+    changePercent: -0.15,
+    currency: 'USD',
+  },
+  {
+    id: 'euridr',
+    symbol: 'EURIDR',
+    name: 'Euro / Indonesian Rupiah',
+    type: 'forex',
+    price: 20328,
+    changePercent: -0.03,
+    currency: 'IDR',
   },
   {
     id: 'xauusd',
@@ -54,15 +101,6 @@ export const marketAssets: MarketAsset[] = [
     type: 'forex',
     price: 3398.5,
     changePercent: 0.74,
-    currency: 'USD',
-  },
-  {
-    id: 'eurusd',
-    symbol: 'EURUSD',
-    name: 'Euro / US Dollar',
-    type: 'forex',
-    price: 1.1684,
-    changePercent: -0.21,
     currency: 'USD',
   },
 ];

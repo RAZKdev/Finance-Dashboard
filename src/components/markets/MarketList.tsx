@@ -1,8 +1,11 @@
 import React from 'react';
 import type { MarketAsset } from '../../data/markets';
 
-interface MarketListProps {
+export interface MarketListProps {
   assets: MarketAsset[];
+  onRefresh?: () => Promise<void> | void;
+  isRefreshing?: boolean;
+  lastSyncTime?: string | null;
 }
 
 type MarketFilter = 'all' | MarketAsset['type'];
@@ -28,15 +31,15 @@ const formatPrice = (asset: MarketAsset) => {
 };
 
 const typeLabel: Record<MarketAsset['type'], string> = {
-  stock: 'Stock',
+  stock: 'Stock (IHSG)',
   crypto: 'Crypto',
   forex: 'Forex',
 };
 
 const typeDescription: Record<MarketAsset['type'], string> = {
-  stock: 'Stock market asset',
-  crypto: 'Cryptocurrency asset',
-  forex: 'Foreign exchange asset',
+  stock: 'Indonesian Stock Exchange (IDX) Equity Asset',
+  crypto: 'Cryptocurrency Asset (Real-time Binance Ticker)',
+  forex: 'Foreign Exchange Rate (ExchangeRate-API)',
 };
 
 const MarketDetail: React.FC<{
@@ -69,9 +72,21 @@ const MarketDetail: React.FC<{
                   {typeLabel[asset.type]}
                 </span>
 
-                <span className="rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                  Simulated Snapshot
+                <span
+                  className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                    asset.isLive
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : 'border-border bg-surface text-text-muted'
+                  }`}
+                >
+                  {asset.isLive ? '🟢 Live Data' : 'Snapshot'}
                 </span>
+
+                {asset.lastUpdated && (
+                  <span className="rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-medium text-text-muted">
+                    Updated: {asset.lastUpdated}
+                  </span>
+                )}
               </div>
 
               <p className="mt-1 text-sm text-text-muted">
@@ -99,7 +114,7 @@ const MarketDetail: React.FC<{
             </div>
 
             <div className="rounded-lg border border-border bg-background p-4">
-              <p className="text-xs text-text-muted">Change</p>
+              <p className="text-xs text-text-muted">Daily Change</p>
               <p
                 className={`mt-1 text-lg font-bold tabular-nums ${
                   isPositive ? 'text-positive' : 'text-negative'
@@ -111,7 +126,7 @@ const MarketDetail: React.FC<{
             </div>
 
             <div className="rounded-lg border border-border bg-background p-4 sm:col-span-2">
-              <p className="text-xs text-text-muted">Asset Type</p>
+              <p className="text-xs text-text-muted">Data Provider / Asset Type</p>
               <p className="mt-1 text-sm font-semibold text-text-primary">
                 {typeDescription[asset.type]}
               </p>
@@ -125,6 +140,9 @@ const MarketDetail: React.FC<{
 
 export const MarketList: React.FC<MarketListProps> = ({
   assets,
+  onRefresh,
+  isRefreshing = false,
+  lastSyncTime = null,
 }) => {
   const [filter, setFilter] = React.useState<MarketFilter>('all');
   const [sort, setSort] = React.useState<MarketSort>('default');
@@ -212,7 +230,7 @@ export const MarketList: React.FC<MarketListProps> = ({
 
   const filters: Array<{ value: MarketFilter; label: string }> = [
     { value: 'all', label: 'All' },
-    { value: 'stock', label: 'Stocks' },
+    { value: 'stock', label: 'Stocks (IHSG)' },
     { value: 'crypto', label: 'Crypto' },
     { value: 'forex', label: 'Forex' },
   ];
@@ -249,6 +267,47 @@ export const MarketList: React.FC<MarketListProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Live Data Sync Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-surface/40 p-3 sm:px-4">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          </span>
+
+          <span className="text-text-muted">
+            {lastSyncTime ? (
+              <>
+                <strong className="text-text-primary">Data Live Terhubung</strong> · Terakhir diperbarui: {lastSyncTime}
+              </>
+            ) : (
+              'Live Market Provider (ExchangeRate-API, Binance & Yahoo Finance IDX)'
+            )}
+          </span>
+        </div>
+
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={() => onRefresh()}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white shadow-xs transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {isRefreshing ? (
+              <>
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span>Memperbarui...</span>
+              </>
+            ) : (
+              <>
+                <span aria-hidden="true">↻</span>
+                <span>Perbarui Data Live</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
       <div className="relative">
         <label
           htmlFor="market-search"
@@ -265,13 +324,6 @@ export const MarketList: React.FC<MarketListProps> = ({
           placeholder="Search symbol, asset name, or type..."
           className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
-      </div>
-
-      <div className="flex items-center justify-between gap-2 text-xs text-text-muted">
-        <p>Simulated market snapshot · Provider integration inactive</p>
-        <span className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-          Demo
-        </span>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -307,42 +359,42 @@ export const MarketList: React.FC<MarketListProps> = ({
             role="group"
             aria-label="Market filters"
           >
-          {filters.map((item) => {
-            const isActive = filter === item.value;
+            {filters.map((item) => {
+              const isActive = filter === item.value;
 
-            return (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setFilter(item.value)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary text-white'
-                    : 'bg-surface text-text-muted hover:text-text-primary'
-                }`}
-                aria-pressed={isActive}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setFilter(item.value)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary text-white'
+                      : 'bg-surface text-text-muted hover:text-text-primary'
+                  }`}
+                  aria-pressed={isActive}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
 
-        <label className="flex items-center gap-2 text-xs text-text-muted">
-          <span>Sort</span>
-          <select
-            value={sort}
-            onChange={(event) =>
-              setSort(event.target.value as MarketSort)
-            }
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-          >
-            {sorts.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+          <label className="flex items-center gap-2 text-xs text-text-muted">
+            <span>Sort</span>
+            <select
+              value={sort}
+              onChange={(event) =>
+                setSort(event.target.value as MarketSort)
+              }
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+            >
+              {sorts.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
       </div>
@@ -359,7 +411,6 @@ export const MarketList: React.FC<MarketListProps> = ({
         <div className="space-y-2">
           {sortedAssets.map((asset) => {
             const isPositive = asset.changePercent >= 0;
-
             const isFavorite = favoriteIds.includes(asset.id);
 
             const toggleFavorite = () => {
@@ -395,38 +446,45 @@ export const MarketList: React.FC<MarketListProps> = ({
                   className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left transition-colors hover:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
                   aria-label={`View details for ${asset.symbol}`}
                 >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold">
-                      {asset.symbol}
-                    </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">
+                        {asset.symbol}
+                      </p>
 
-                    <span className="rounded-md bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-muted">
-                      {typeLabel[asset.type]}
-                    </span>
+                      <span className="rounded-md bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                        {typeLabel[asset.type]}
+                      </span>
+
+                      {asset.isLive && (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          Live
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="truncate text-xs text-text-muted">
+                      {asset.name}
+                    </p>
                   </div>
 
-                  <p className="truncate text-xs text-text-muted">
-                    {asset.name}
-                  </p>
-                </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-semibold tabular-nums">
+                      {formatPrice(asset)}
+                    </p>
 
-                <div className="shrink-0 text-right">
-                  <p className="text-sm font-semibold tabular-nums">
-                    {formatPrice(asset)}
-                  </p>
-
-                  <p
-                    className={`text-xs font-medium tabular-nums ${
-                      isPositive
-                        ? 'text-positive'
-                        : 'text-negative'
-                    }`}
-                  >
-                    {isPositive ? '+' : ''}
-                    {asset.changePercent.toFixed(2)}%
-                  </p>
-                </div>
+                    <p
+                      className={`text-xs font-medium tabular-nums ${
+                        isPositive
+                          ? 'text-positive'
+                          : 'text-negative'
+                      }`}
+                    >
+                      {isPositive ? '+' : ''}
+                      {asset.changePercent.toFixed(2)}%
+                    </p>
+                  </div>
                 </button>
               </div>
             );

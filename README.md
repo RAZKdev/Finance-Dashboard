@@ -78,6 +78,12 @@ Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript murni deng
 ### 6. 🔍 Quick Search & Filter Transaksi
 - Pencarian instan dan penyaringan transaksi berdasarkan judul, kategori, jenis transaksi (*income* / *expense*), atau tanggal.
 
+### 7. 🌐 Live Market Feed (Forex, Kripto & Saham IHSG)
+- **Forex / Valuta Asing**: Integrasi langsung dengan *ExchangeRate-API* untuk kurs real-time USD/IDR, EUR/USD, dan EUR/IDR.
+- **Kripto**: Integrasi live data ticker Binance untuk pergerakan harga Bitcoin (BTC) dan Ethereum (ETH) 24 jam.
+- **Saham Indonesia (IHSG / IDX)**: Integrasi kuotasi saham Bursa Efek Indonesia (BBCA, BMRI, BBRI, TLKM) melalui Vite reverse proxy.
+- **Resilience & Financial Honesty**: Proteksi offline dengan snapshot lokal di `localStorage`, timestamp pembaruan transparan, dan tombol *refresh* manual on-demand.
+
 ---
 
 ## 🚀 Panduan Memulai (*Getting Started*)

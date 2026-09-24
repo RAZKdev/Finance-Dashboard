@@ -62,6 +62,12 @@ import {
   updateBudget,
 } from './utils/budgets';
 import { marketAssets } from './data/markets';
+import type { MarketAsset } from './data/markets';
+import {
+  loadCachedMarketAssets,
+  saveCachedMarketAssets,
+  syncLiveMarketAssets,
+} from './utils/marketLive';
 import {
   calculatePortfolioAllocation,
   calculatePortfolioAnalytics,
@@ -273,6 +279,59 @@ function App() {
     useState(false);
   const [selectedBudgetMonth, setSelectedBudgetMonth] =
     useState<string>(currentMonth);
+
+  const [marketList, setMarketList] = useState<MarketAsset[]>(() => {
+    const { assets } = loadCachedMarketAssets(marketAssets);
+    return assets;
+  });
+  const [marketLastSync, setMarketLastSync] = useState<string | null>(() => {
+    const { lastSync } = loadCachedMarketAssets(marketAssets);
+    return lastSync;
+  });
+  const [isSyncingMarkets, setIsSyncingMarkets] = useState(false);
+
+  const handleRefreshMarkets = async () => {
+    setIsSyncingMarkets(true);
+    try {
+      const res = await syncLiveMarketAssets(marketList);
+      setMarketList(res.assets);
+      setMarketLastSync(res.syncTimestamp);
+      saveCachedMarketAssets(res.assets, res.syncTimestamp);
+    } catch (err) {
+      console.warn('Failed to sync live markets:', err);
+    } finally {
+      setIsSyncingMarkets(false);
+    }
+  };
+
+  useEffect(() => {
+    let ignore = false;
+
+    const timer = setTimeout(() => {
+      void (async () => {
+        setIsSyncingMarkets(true);
+        try {
+          const res = await syncLiveMarketAssets(marketAssets);
+          if (!ignore) {
+            setMarketList(res.assets);
+            setMarketLastSync(res.syncTimestamp);
+            saveCachedMarketAssets(res.assets, res.syncTimestamp);
+          }
+        } catch (err) {
+          console.warn('Failed to sync live markets:', err);
+        } finally {
+          if (!ignore) {
+            setIsSyncingMarkets(false);
+          }
+        }
+      })();
+    }, 0);
+
+    return () => {
+      ignore = true;
+      clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -614,10 +673,15 @@ function App() {
           <Card>
             <SectionHeader
               title="Markets"
-              description="Latest market snapshot."
+              description="Live market feed for Forex, Crypto & Indonesian Stocks (IHSG)."
             />
 
-            <MarketList assets={marketAssets} />
+            <MarketList
+              assets={marketList}
+              onRefresh={handleRefreshMarkets}
+              isRefreshing={isSyncingMarkets}
+              lastSyncTime={marketLastSync}
+            />
           </Card>
         );
 
@@ -772,8 +836,8 @@ function App() {
               Export / Restore
             </Button>
 
-            <Badge variant="default">
-              Simulated Data
+            <Badge variant={marketLastSync ? 'positive' : 'default'}>
+              {marketLastSync ? '🟢 Live Market Active' : 'Simulated Data'}
             </Badge>
           </div>
         </div>

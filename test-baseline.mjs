@@ -58,6 +58,12 @@ import {
   exportBudgetsToCSV,
 } from './src/utils/backup.ts';
 
+import {
+  loadCachedMarketAssets,
+  saveCachedMarketAssets,
+  syncLiveMarketAssets,
+} from './src/utils/marketLive.ts';
+
 test('calculatePortfolioMetrics - complete gain scenario', () => {
   const asset = {
     id: 'asset-1',
@@ -866,6 +872,63 @@ test('CSV serialization and domain exporters - escaping and header formatting', 
   assert.equal(bgtCsv.includes('Budget ID,Category,Monthly Limit,Month,Created At'), true);
   assert.equal(bgtCsv.includes('Dining & Drinks'), true);
 });
+
+test('loadCachedMarketAssets & saveCachedMarketAssets - storage resilience and fallback', () => {
+  const originalLocalStorage = globalThis.localStorage;
+  const mockStorage = new Map();
+
+  globalThis.localStorage = {
+    getItem: (key) => mockStorage.get(key) ?? null,
+    setItem: (key, val) => mockStorage.set(key, String(val)),
+    removeItem: (key) => mockStorage.delete(key),
+    clear: () => mockStorage.clear(),
+  };
+
+  const defaultAssets = [
+    { id: 'bbca', symbol: 'BBCA', name: 'BCA', type: 'stock', price: 6200, changePercent: 0, currency: 'IDR' },
+  ];
+
+  try {
+    // 1. Initial empty storage returns fallback
+    const res1 = loadCachedMarketAssets(defaultAssets);
+    assert.deepEqual(res1.assets, defaultAssets);
+    assert.equal(res1.lastSync, null);
+
+    // 2. Save valid assets and last sync
+    const liveAssets = [
+      { id: 'bbca', symbol: 'BBCA', name: 'BCA', type: 'stock', price: 6250, changePercent: 0.81, currency: 'IDR', isLive: true },
+    ];
+    saveCachedMarketAssets(liveAssets, '25 Sep, 13:45');
+
+    const res2 = loadCachedMarketAssets(defaultAssets);
+    assert.equal(res2.assets.length, 1);
+    assert.equal(res2.assets[0].price, 6250);
+    assert.equal(res2.assets[0].isLive, true);
+    assert.equal(res2.lastSync, '25 Sep, 13:45');
+
+    // 3. Corrupt JSON in localStorage falls back safely
+    mockStorage.set('finance-dashboard-market-cache-v1', '{corrupt json');
+    const res3 = loadCachedMarketAssets(defaultAssets);
+    assert.deepEqual(res3.assets, defaultAssets);
+  } finally {
+    globalThis.localStorage = originalLocalStorage;
+  }
+});
+
+test('syncLiveMarketAssets - gracefully updates assets without throwing on network errors', async () => {
+  const testAssets = [
+    { id: 'btc', symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 80000, changePercent: 0, currency: 'USD' },
+    { id: 'bbca', symbol: 'BBCA', name: 'BCA', type: 'stock', price: 6000, changePercent: 0, currency: 'IDR' },
+  ];
+
+  const result = await syncLiveMarketAssets(testAssets);
+  assert.equal(Array.isArray(result.assets), true);
+  assert.equal(result.assets.length, 2);
+  assert.equal(typeof result.updatedCount, 'number');
+  assert.equal(typeof result.failedCount, 'number');
+  assert.equal(typeof result.syncTimestamp, 'string');
+});
+
 
 
 
