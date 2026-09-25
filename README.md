@@ -4,7 +4,7 @@
 
 ---
 
-## 📌 Deskripsi & Identitas Proyek
+## Deskripsi & Identitas Proyek
 
 **Finance Dashboard** adalah platform workstation keuangan pribadi (*personal finance and investment workstation*) modern yang dirancang untuk memberikan kendali penuh atas posisi finansial Anda.
 
@@ -12,7 +12,7 @@ Aplikasi ini menggabungkan pencatatan multi-rekening kas/bank, alokasi aset port
 
 ---
 
-## 💡 Alasan Dibuat (*Why This Project Exists*)
+## Alasan Dibuat (*Why This Project Exists*)
 
 1. **Menghindari Estetika "Casino Trading" & Angka Semu**:
    Banyak aplikasi keuangan modern terjebak dalam visualisasi berlebihan, warna neon agresif, dan metrik yang membingungkan. Finance Dashboard dibangun dengan filosofi desain yang tenang (*calm*), profesional, dan jujur terhadap data moneter.
@@ -25,7 +25,7 @@ Aplikasi ini menggabungkan pencatatan multi-rekening kas/bank, alokasi aset port
 
 ---
 
-## 🛠️ Bahasa Pemrograman & Teknologi yang Digunakan
+## Bahasa Pemrograman & Teknologi yang Digunakan
 
 Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript murni dengan dependensi yang ramping dan efisien:
 
@@ -41,61 +41,61 @@ Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript murni deng
 
 ---
 
-## ✨ Fitur & Fungsi Utama
+## Fitur & Fungsi Utama
 
-### 1. 🏦 Full Account Ledger Integration
+### 1. Full Account Ledger Integration
 - Mendukung multi-rekening: **Bank**, **Tunai/Cash**, **E-Wallet**, dan rekening lainnya.
 - Perhitungan saldo dinamis berbasis buku besar (*ledger*):
   $$\text{Saldo Akhir} = \text{Opening Balance} + \sum(\text{Pemasukan Terkait}) - \sum(\text{Pengeluaran Terkait})$$
 - Menampilkan rincian mutasi bersih dan riwayat aktivitas transaksi per rekening.
 
-### 2. 🎯 Budget vs Realization Engine
+### 2. Budget vs Realization Engine
 - Menentukan batas pengeluaran bulanan (*spending limit*) per kategori untuk bulan target tertentu (`YYYY-MM`).
 - Rekonsiliasi pengeluaran riil otomatis: mengagregasi seluruh transaksi pengeluaran pada bulan dan kategori yang bersangkutan.
 - Indikator status semantik:
-  - 🟢 **On Track** ($< 80\%$ limit)
-  - 🟡 **Near Limit** ($\ge 80\%$ s.d. $100\%$ limit)
-  - 🔴 **Over Budget** ($> 100\%$ limit)
+  - **On Track** ($< 80\%$ limit)
+  - **Near Limit** ($\ge 80\%$ s.d. $100\%$ limit)
+  - **Over Budget** ($> 100\%$ limit)
 - Ringkasan kesehatan anggaran bulanan (*budget health summary*) di dashboard utama.
 
-### 3. 📊 Cashflow Analytics & Trend Visualizer
+### 3. Cashflow Analytics & Trend Visualizer
 - **Dual-Column Comparison Chart**: Grafik perbandingan kolom bulanan antara *Inflow* (pemasukan) dan *Outflow* (pengeluaran) dalam jendela waktu 6 bulan berurutan.
 - **Rasio Tabungan (*Savings Rate*)**: Menghitung efisiensi tabungan bulanan secara transparan.
 - **Category Expense Trend & MoM Shifts**: Menganalisis pergeseran kenaikan atau penurunan biaya per kategori dibandingkan bulan sebelumnya (*Month-over-Month change*).
 
-### 4. 📈 Portfolio & Asset Management
+### 4. Portfolio & Asset Management
 - Pelacakan alokasi aset investasi: Saham, Kripto, Forex, dan Kas.
 - Metrik performa investasi: *Cost Basis*, *Market Value*, serta *Profit & Loss* ($/ \%) yang objektif.
 - Analisis kualitas portofolio dan deteksi risiko konsentrasi aset.
 
-### 5. 💾 Export, Backup & Restore System
+### 5. Export, Backup & Restore System
 - **Full JSON Snapshot**: Cadangkan seluruh akun, transaksi, portofolio, dan anggaran dalam 1 file JSON terverifikasi.
 - **Strategi Pemulihan Fleksibel**:
   - *Replace All*: Menimpa data dengan data backup.
   - *Merge with Current*: Menggabungkan data cadangan tanpa menghapus data aktif.
 - **CSV Tabular Export**: Unduh data secara terpisah ke dalam format `.csv` untuk Transaksi, Rekening, Portofolio, dan Anggaran.
 
-### 6. 🔍 Quick Search & Filter Transaksi
+### 6. Quick Search & Filter Transaksi
 - Pencarian instan dan penyaringan transaksi berdasarkan judul, kategori, jenis transaksi (*income* / *expense*), atau tanggal.
 
-### 7. 🌐 Live Market Feed (Forex, Kripto & Saham IHSG)
+### 7. Live Market Feed (Forex, Kripto & Saham IHSG)
 - **Forex / Valuta Asing**: Integrasi langsung dengan *ExchangeRate-API* untuk kurs real-time USD/IDR, EUR/USD, dan EUR/IDR.
 - **Kripto**: Integrasi live data ticker Binance untuk pergerakan harga Bitcoin (BTC) dan Ethereum (ETH) 24 jam.
 - **Saham Indonesia (IHSG / IDX)**: Integrasi kuotasi saham Bursa Efek Indonesia (BBCA, BMRI, BBRI, TLKM) melalui Vite reverse proxy.
 - **Resilience & Financial Honesty**: Proteksi offline dengan snapshot lokal di `localStorage`, timestamp pembaruan transparan, dan tombol *refresh* manual on-demand.
 
-### 8. 🕯️ Live Running Candlestick (OHLC) Chart
+### 8. Live Running Candlestick (OHLC) Chart
 - **Real-Time Candlestick Bars**: Menampilkan candlestick lengkap dengan badan (*body*) dan sumbu atas/bawah (*upper/lower wicks*) berbasis data riil bursa (Open, High, Low, Close).
 - **Active Candle Live Dynamics**: Candle paling kanan bergerak aktif mengikuti *price tick* terkini (memperbarui Close, High, dan Low secara *real-time*), dan membentuk candle baru saat siklus interval selesai.
 - **TradingView-Style OHLC Header**: Bar informasi interaktif di atas chart yang menampilkan nilai presisi Open (O), High (H), Low (L), Close (C), dan persentase perubahan saat kursor diarahkan ke candle manapun.
-- **Dual Chart Mode Toggle**: Bebas beralih antara 🕯️ **Candlestick** (default) dan 📈 **Line** curve kapan saja.
+- **Dual Chart Mode Toggle**: Bebas beralih antara **Candlestick** (default) dan **Line** curve kapan saja.
 - **Pulsing Price Tracker & Crosshair**: Garis horizontal putus-putus dengan label harga berkedip di sumbu Y yang melacak harga aktif, serta garis silang (*crosshair*) saat inspeksi pointer.
-- **Multi-Timeframe & Controls**: Pilihan timeframe `🔴 Live`, `1D`, `1W`, `1M`, serta tombol *Pause/Resume* aliran candle.
+- **Multi-Timeframe & Controls**: Pilihan timeframe `Live`, `1D`, `1W`, `1M`, serta tombol *Pause/Resume* aliran candle.
 - **Instant Asset Switcher**: Tombol cepat untuk beralih instan antar saham IHSG (BBCA, BMRI, BBRI, TLKM), Kripto (BTC, ETH), dan Forex (USD/IDR, EUR/USD, XAU/USD).
 
 ---
 
-## 🚀 Panduan Memulai (*Getting Started*)
+## Panduan Memulai (*Getting Started*)
 
 ### Prasyarat
 - [Node.js](https://nodejs.org/) versi 22 atau lebih baru.
@@ -118,13 +118,13 @@ Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript murni deng
    ```bash
    npm run dev
    ```
-   Buka peramban di `http://localhost:5173`.
+   Buka peramban di `http://localhost:5173` (atau jalankan `start.bat` secara langsung).
 
 4. **Jalankan pengujian otomatis (Automated Unit Tests)**:
    ```bash
    npm test
    ```
-   *(Menjalankan 26 unit test verifikasi ledger, anggaran, cashflow, portofolio, dan sistem backup).*
+   *(Menjalankan 34 unit test verifikasi ledger, anggaran, cashflow, portofolio, live chart, dan sistem backup).*
 
 5. **Build untuk produksi**:
    ```bash
@@ -138,11 +138,11 @@ Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript murni deng
 
 ---
 
-## 🔒 Keamanan & Kebijakan Data
+## Keamanan & Kebijakan Data
 - **Tanpa Pengumpulan Data**: Seluruh data tersimpan secara eksklusif pada peramban lokal Anda.
 - **Pembersihan CSV**: Mencegah kerentanan formula injection pada spreadsheet dengan sanitasi karakter koma, kutip ganda, dan baris baru.
 
 ---
 
-## 📄 Lisensi
+## Lisensi
 Didistribusikan di bawah lisensi terbuka untuk penggunaan pribadi dan edukasi.
