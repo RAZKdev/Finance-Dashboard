@@ -84,6 +84,13 @@ Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript murni deng
 - **Saham Indonesia (IHSG / IDX)**: Integrasi kuotasi saham Bursa Efek Indonesia (BBCA, BMRI, BBRI, TLKM) melalui Vite reverse proxy.
 - **Resilience & Financial Honesty**: Proteksi offline dengan snapshot lokal di `localStorage`, timestamp pembaruan transparan, dan tombol *refresh* manual on-demand.
 
+### 8. 📊 Live Running Interactive Chart
+- **Dynamic Streaming Graph (Bisa Jalan Real-time)**: Grafik SVG interaktif dengan kurva Bezier halus, gradien dinamis (hijau naik / merah turun), dan indikator *beacon pulsing dot* di ujung harga terakhir yang bergerak secara *live*.
+- **Live Stream Controls**: Tombol *Pause/Resume* untuk streaming harga, penghitung *tick updates*, dan efek *flash* saat harga bergerak naik/turun.
+- **Multi-Timeframe Analysis**: Mendukung mode `🔴 Live Stream`, `1D (Intraday)`, `1W (1 Minggu)`, dan `1M (1 Bulan)`.
+- **Crosshair & Hover Tooltip**: Arahkan pointer ke titik grafik manapun untuk melihat harga presisi, waktu detik, dan persentase perubahan.
+- **Instant Asset Switcher**: Tombol cepat untuk beralih instan antar saham IHSG (BBCA, BMRI, BBRI, TLKM), Kripto (BTC, ETH), dan Forex (USD/IDR, EUR/USD, XAU/USD).
+
 ---
 
 ## 🚀 Panduan Memulai (*Getting Started*)

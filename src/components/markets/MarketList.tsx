@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MarketAsset } from '../../data/markets';
+import { MarketLiveChart } from './MarketLiveChart';
 
 export interface MarketListProps {
   assets: MarketAsset[];
@@ -132,6 +133,10 @@ const MarketDetail: React.FC<{
               </p>
             </div>
           </div>
+
+          <div className="pt-2">
+            <MarketLiveChart asset={asset} />
+          </div>
         </div>
       </div>
     </div>
@@ -150,6 +155,13 @@ export const MarketList: React.FC<MarketListProps> = ({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedAsset, setSelectedAsset] =
     React.useState<MarketAsset | null>(null);
+
+  const [selectedChartAssetId, setSelectedChartAssetId] = React.useState<string>(
+    () => assets[0]?.id || ''
+  );
+
+  const activeChartAsset =
+    assets.find((a) => a.id === selectedChartAssetId) || assets[0];
 
   const [favoriteIds, setFavoriteIds] = React.useState<string[]>(() => {
     try {
@@ -308,6 +320,15 @@ export const MarketList: React.FC<MarketListProps> = ({
         )}
       </div>
 
+      {/* Interactive Live Running Chart */}
+      {activeChartAsset && (
+        <MarketLiveChart
+          asset={activeChartAsset}
+          allAssets={assets}
+          onSelectAsset={(selected) => setSelectedChartAssetId(selected.id)}
+        />
+      )}
+
       <div className="relative">
         <label
           htmlFor="market-search"
@@ -442,7 +463,10 @@ export const MarketList: React.FC<MarketListProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setSelectedAsset(asset)}
+                  onClick={() => {
+                    setSelectedChartAssetId(asset.id);
+                    setSelectedAsset(asset);
+                  }}
                   className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left transition-colors hover:bg-surface/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
                   aria-label={`View details for ${asset.symbol}`}
                 >
@@ -485,6 +509,20 @@ export const MarketList: React.FC<MarketListProps> = ({
                       {asset.changePercent.toFixed(2)}%
                     </p>
                   </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedChartAssetId(asset.id)}
+                  className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                    selectedChartAssetId === asset.id
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-surface hover:bg-surface-elevated text-text-muted hover:text-text-primary border border-border/80'
+                  }`}
+                  aria-label={`Plot ${asset.symbol} on chart`}
+                  title={`Plot ${asset.symbol} on chart`}
+                >
+                  📈 Chart
                 </button>
               </div>
             );

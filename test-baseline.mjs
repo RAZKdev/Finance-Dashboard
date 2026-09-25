@@ -64,6 +64,12 @@ import {
   syncLiveMarketAssets,
 } from './src/utils/marketLive.ts';
 
+import {
+  generateRealisticHistory,
+  appendLiveTick,
+  fetchChartPoints,
+} from './src/utils/chartData.ts';
+
 test('calculatePortfolioMetrics - complete gain scenario', () => {
   const asset = {
     id: 'asset-1',
@@ -928,6 +934,51 @@ test('syncLiveMarketAssets - gracefully updates assets without throwing on netwo
   assert.equal(typeof result.failedCount, 'number');
   assert.equal(typeof result.syncTimestamp, 'string');
 });
+
+test('generateRealisticHistory - produces valid chronological price series', () => {
+  const points = generateRealisticHistory(6225, 2.5, 20, 'LIVE');
+  assert.equal(points.length, 20);
+  assert.equal(points[points.length - 1].price, 6225); // latest equals currentPrice
+
+  // Timestamps strictly increasing
+  for (let i = 1; i < points.length; i++) {
+    assert.equal(points[i].timestamp > points[i - 1].timestamp, true);
+    assert.equal(points[i].price > 0, true);
+    assert.equal(typeof points[i].timeLabel, 'string');
+  }
+});
+
+test('appendLiveTick - streams new ticks and caps at max buffer length', () => {
+  let points = generateRealisticHistory(10000, 0, 34, 'LIVE');
+  assert.equal(points.length, 34);
+
+  // Append 1st tick -> length 35
+  points = appendLiveTick(points, 10050);
+  assert.equal(points.length, 35);
+  assert.equal(points[34].price > 0, true);
+
+  // Append 2nd tick -> buffer capped at 35
+  points = appendLiveTick(points, 10100);
+  assert.equal(points.length, 35);
+});
+
+test('fetchChartPoints - resolves to valid points array for any market asset', async () => {
+  const asset = {
+    id: 'bbca',
+    symbol: 'BBCA',
+    name: 'BCA',
+    type: 'stock',
+    price: 6225,
+    changePercent: -1.2,
+    currency: 'IDR',
+  };
+
+  const points = await fetchChartPoints(asset, 'LIVE');
+  assert.equal(Array.isArray(points), true);
+  assert.equal(points.length >= 5, true);
+  assert.equal(points.every(p => typeof p.price === 'number' && p.price > 0), true);
+});
+
 
 
 
