@@ -18,7 +18,7 @@ interface MarketLiveChartProps {
 
 const formatCurrencyValue = (val: number, currency: string) => {
   if (currency === 'IDR') {
-    return `Rp ${val.toLocaleString('id-ID')}`;
+    return `Rp ${Math.round(val).toLocaleString('id-ID')}`;
   }
   return `${currency} ${val.toLocaleString('en-US', {
     maximumFractionDigits: val < 10 ? 4 : 2,
@@ -63,7 +63,7 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
     };
   }, [asset, timeframe]);
 
-  // Live running stream interval (active in LIVE mode)
+  // Live running stream interval (active in LIVE mode: updates every 1.2s)
   useEffect(() => {
     if (timeframe !== 'LIVE' || !isStreaming) return;
 
@@ -79,12 +79,12 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
           } else {
             setFlashColor('red');
           }
-          setTimeout(() => setFlashColor(null), 800);
+          setTimeout(() => setFlashColor(null), 400);
         }
 
         return res.candles;
       });
-    }, 2500);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [timeframe, isStreaming, asset.price, ticksInCandle]);
@@ -98,7 +98,7 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
         setFlashColor('red');
       }
       prevPriceRef.current = asset.price;
-      setTimeout(() => setFlashColor(null), 800);
+      setTimeout(() => setFlashColor(null), 400);
     }
   }, [asset.price]);
 
@@ -107,17 +107,24 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
   const allLows = candles.map((c) => c.low);
   const rawMin = allLows.length ? Math.min(...allLows) : asset.price * 0.98;
   const rawMax = allHighs.length ? Math.max(...allHighs) : asset.price * 1.02;
-  const priceRange = rawMax - rawMin || 1;
-  const paddedMin = rawMin - priceRange * 0.08;
-  const paddedMax = rawMax + priceRange * 0.08;
-  const paddedRange = paddedMax - paddedMin;
 
-  const width = 800;
-  const height = 280;
-  const paddingLeft = 15;
-  const paddingRight = 65; // space for Y-axis labels
-  const paddingTop = 25;
-  const paddingBottom = 30;
+  const midPrice = (rawMax + rawMin) / 2 || asset.price;
+  const naturalSpan = rawMax - rawMin;
+  // Enforce a minimum 4.5% vertical range so narrow spreads (e.g. BBCA 25 IDR) don't explode into giant pillars
+  const minSpan = Math.max(midPrice * 0.045, asset.price > 100 ? 120 : 0.004);
+  const effectiveSpan = Math.max(naturalSpan, minSpan);
+
+  // 35% breathing room top & bottom so candles float gracefully in the central zone
+  const paddedMin = midPrice - (effectiveSpan / 2) * 1.35;
+  const paddedMax = midPrice + (effectiveSpan / 2) * 1.35;
+  const paddedRange = paddedMax - paddedMin || 1;
+
+  const width = 840;
+  const height = 300;
+  const paddingLeft = 16;
+  const paddingRight = 75; // space for Y-axis labels
+  const paddingTop = 22;
+  const paddingBottom = 40; // space for X-axis timestamps and volume bars
 
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
@@ -127,8 +134,9 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
   };
 
   const candleCount = candles.length;
-  const slotWidth = candleCount > 0 ? chartWidth / candleCount : 20;
-  const candleBodyWidth = Math.max(4, Math.min(14, slotWidth * 0.68));
+  const slotWidth = candleCount > 0 ? chartWidth / candleCount : 24;
+  // Proportional candle body with healthy 42% gap between candles
+  const candleBodyWidth = Math.max(5, Math.min(13, slotWidth * 0.58));
 
   // Current / display candle stats (either hovered or the latest active candle)
   const latestCandle = candles[candles.length - 1];
@@ -142,7 +150,7 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
   // Active price level for dashed guide line
   const activeY = latestCandle ? scalePriceToY(latestCandle.close) : height / 2;
   const activeIsBullish = latestCandle ? latestCandle.close >= latestCandle.open : true;
-  const activeColor = activeIsBullish ? '#10b981' : '#f43f5e';
+  const activeColor = activeIsBullish ? '#22c55e' : '#ef4444';
 
   // Build Line Path if chartType === 'line'
   let linePathD = '';
@@ -241,12 +249,12 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
             <span className="text-xs text-text-muted">· {asset.name}</span>
 
             {timeframe === 'LIVE' && isStreaming && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                 </span>
-                LIVE CANDLE
+                LIVE TICKING · 1.2s
               </span>
             )}
           </div>
@@ -419,16 +427,24 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
           onPointerLeave={handlePointerLeave}
         >
           <defs>
-            <filter id="glow-green" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#10b981" floodOpacity="0.6" />
+            <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#22c55e" floodOpacity="0.75" />
             </filter>
-            <filter id="glow-red" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#f43f5e" floodOpacity="0.6" />
+            <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#ef4444" floodOpacity="0.75" />
             </filter>
+            <linearGradient id="vol-bullish" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="#22c55e" stopOpacity="0.05" />
+            </linearGradient>
+            <linearGradient id="vol-bearish" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="#ef4444" stopOpacity="0.05" />
+            </linearGradient>
           </defs>
 
           {/* Horizontal Grid Lines & Price Labels on right axis */}
-          {[0.2, 0.4, 0.6, 0.8].map((ratio) => {
+          {[0.15, 0.38, 0.62, 0.85].map((ratio) => {
             const y = paddingTop + chartHeight * ratio;
             const priceLevel = paddedMax - ratio * paddedRange;
             return (
@@ -439,7 +455,7 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
                   x2={width - paddingRight}
                   y2={y}
                   stroke="currentColor"
-                  className="text-border/40"
+                  className="text-border/35"
                   strokeDasharray="3 3"
                   strokeWidth="1"
                 />
@@ -455,25 +471,38 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
             );
           })}
 
-          {/* Bottom Volume Bars (TradingView / Pro Terminal Style) */}
+          {/* Faint Volume Separator Line */}
+          {chartType === 'candle' && (
+            <line
+              x1={paddingLeft}
+              y1={height - paddingBottom + 6}
+              x2={width - paddingRight}
+              y2={height - paddingBottom + 6}
+              stroke="currentColor"
+              className="text-border/25"
+              strokeDasharray="2 2"
+              strokeWidth="0.8"
+            />
+          )}
+
+          {/* Bottom Volume Bars Sub-Lane (TradingView / Terminal Style) */}
           {chartType === 'candle' &&
             candles.map((candle, idx) => {
               const centerX = paddingLeft + (idx + 0.5) * slotWidth;
               const isBullish = candle.close >= candle.open;
-              const color = isBullish ? '#10b981' : '#f43f5e';
               const bodyDelta = Math.abs(candle.close - candle.open);
-              const volRatio = Math.min(1, bodyDelta / (priceRange * 0.25) + 0.15);
-              const barH = volRatio * 26;
+              const volRatio = Math.min(1, bodyDelta / (effectiveSpan * 0.25) + 0.18);
+              const barH = Math.max(3, volRatio * 18);
+              const baseY = height - paddingBottom + 5;
 
               return (
                 <rect
                   key={`vol-${candle.timestamp}`}
                   x={centerX - candleBodyWidth / 2}
-                  y={height - paddingBottom - barH}
+                  y={baseY - barH}
                   width={candleBodyWidth}
                   height={barH}
-                  fill={color}
-                  opacity={0.22}
+                  fill={isBullish ? 'url(#vol-bullish)' : 'url(#vol-bearish)'}
                   rx={1}
                 />
               );
@@ -491,16 +520,16 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
               const bodyTop = Math.min(yOpen, yClose);
               const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
               const isBullish = candle.close >= candle.open;
-              const color = isBullish ? '#10b981' : '#f43f5e';
+              const color = isBullish ? '#22c55e' : '#ef4444';
               const isLast = idx === candleCount - 1;
 
               return (
                 <g
                   key={candle.timestamp}
-                  className="transition-all duration-200"
+                  className="transition-all duration-150"
                   filter={isLast ? (isBullish ? 'url(#glow-green)' : 'url(#glow-red)') : undefined}
                 >
-                  {/* Wick / Shadow */}
+                  {/* Wick / Shadow (Clean vertical line from high to low) */}
                   <line
                     x1={centerX}
                     y1={yHigh}
@@ -508,6 +537,8 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
                     y2={yLow}
                     stroke={color}
                     strokeWidth={1.5}
+                    strokeLinecap="round"
+                    opacity={isLast ? 1 : 0.85}
                   />
 
                   {/* Candle Body */}
@@ -549,14 +580,14 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
                 stroke={activeColor}
                 strokeDasharray="3 3"
                 strokeWidth="1.2"
-                strokeOpacity="0.8"
+                strokeOpacity="0.85"
               />
 
               {/* Price Tag Badge on Right Axis */}
               <rect
                 x={width - paddingRight + 2}
                 y={activeY - 9}
-                width={60}
+                width={68}
                 height={18}
                 rx={3}
                 fill={activeColor}
@@ -583,6 +614,25 @@ export const MarketLiveChart: React.FC<MarketLiveChartProps> = ({
               </g>
             </g>
           )}
+
+          {/* X-Axis Timestamps */}
+          {candles
+            .filter((_, i) => i === 0 || i === Math.floor(candleCount * 0.33) || i === Math.floor(candleCount * 0.66) || i === candleCount - 1)
+            .map((candle) => {
+              const idx = candles.indexOf(candle);
+              const centerX = paddingLeft + (idx + 0.5) * slotWidth;
+              return (
+                <text
+                  key={`time-${candle.timestamp}`}
+                  x={centerX}
+                  y={height - 8}
+                  className="text-[9px] fill-text-muted/60 select-none tabular-nums"
+                  textAnchor="middle"
+                >
+                  {candle.timeLabel}
+                </text>
+              );
+            })}
 
           {/* Crosshairs on Pointer Hover */}
           {hoverX !== null && hoverY !== null && (

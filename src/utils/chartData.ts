@@ -86,7 +86,7 @@ export const generateRealisticHistory = (
 };
 
 /**
- * Generate realistic candlestick history
+ * Generate realistic candlestick history matching professional trading charts (Groww / TradingView)
  */
 export const generateRealisticCandles = (
   currentPrice: number,
@@ -97,34 +97,39 @@ export const generateRealisticCandles = (
   const candles: CandlePoint[] = [];
   const startPrice = currentPrice / (1 + changePercent / 100);
   const now = Date.now();
-  const stepMs = timeframe === 'LIVE' ? 6000 : timeframe === '1D' ? 15 * 60 * 1000 : 3600 * 1000;
+  const stepMs = timeframe === 'LIVE' ? 4000 : timeframe === '1D' ? 15 * 60 * 1000 : 3600 * 1000;
 
   let walkingOpen = startPrice;
   const priceDeltaTotal = currentPrice - startPrice;
   const driftPerCandle = priceDeltaTotal / count;
-  const volatility = currentPrice * 0.004;
+  const baseVolatility = Math.max(currentPrice * 0.0035, currentPrice > 100 ? 15 : 0.001);
 
   const round = (val: number) => (currentPrice > 100 ? Math.round(val) : Number(val.toFixed(4)));
 
   for (let i = 0; i < count; i++) {
     const time = now - (count - 1 - i) * stepMs;
-    const randomShock = (Math.random() - 0.48) * volatility;
+    // Multi-frequency wave pattern for realistic market structure (uptrend, swing pullbacks, breakouts)
+    const wave = Math.sin((i / count) * Math.PI * 2.5) * baseVolatility * 0.8;
+    const randomShock = (Math.random() - 0.48) * baseVolatility;
 
-    let close = i === count - 1 ? currentPrice : walkingOpen + driftPerCandle + randomShock;
+    let close = i === count - 1 ? currentPrice : walkingOpen + driftPerCandle + wave + randomShock;
     close = Math.max(close, currentPrice * 0.5);
 
-    const highExtra = Math.random() * (volatility * 0.8);
-    const lowExtra = Math.random() * (volatility * 0.8);
-    const high = Math.max(walkingOpen, close) + highExtra;
-    const low = Math.min(walkingOpen, close) - lowExtra;
+    const highExtra = Math.random() * (baseVolatility * 0.75) + (currentPrice > 100 ? 4 : 0.0008);
+    const lowExtra = Math.random() * (baseVolatility * 0.75) + (currentPrice > 100 ? 4 : 0.0008);
+
+    const openVal = round(walkingOpen);
+    const closeVal = round(close);
+    const highVal = Math.max(openVal, closeVal, round(Math.max(walkingOpen, close) + highExtra));
+    const lowVal = Math.min(openVal, closeVal, round(Math.min(walkingOpen, close) - lowExtra));
 
     candles.push({
       timestamp: time,
       timeLabel: formatTimeLabel(new Date(time), timeframe),
-      open: round(walkingOpen),
-      high: round(high),
-      low: round(low),
-      close: round(close),
+      open: openVal,
+      high: highVal,
+      low: lowVal,
+      close: closeVal,
     });
 
     walkingOpen = close;
@@ -189,8 +194,9 @@ export const updateOrAppendLiveCandle = (
   const lastCandle = prevCandles[prevCandles.length - 1];
   const lastPrice = lastCandle.close;
 
-  const drift = (currentPrice - lastPrice) * 0.2;
-  const microJiggle = (Math.random() - 0.49) * (currentPrice * 0.0018);
+  const drift = (currentPrice - lastPrice) * 0.25;
+  const volatility = Math.max(currentPrice * 0.0012, currentPrice > 100 ? 5 : 0.0004);
+  const microJiggle = (Math.random() - 0.48) * volatility;
   const newPrice = currentPrice > 100
     ? Math.round(lastPrice + drift + microJiggle)
     : Number((lastPrice + drift + microJiggle).toFixed(4));
@@ -209,13 +215,14 @@ export const updateOrAppendLiveCandle = (
 
   // Finalize candle and open a brand new candle
   const now = new Date();
+  const wickBuffer = currentPrice > 100 ? Math.round(Math.random() * 5) + 3 : 0.0005;
   const newCandle: CandlePoint = {
     timestamp: now.getTime(),
     timeLabel: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     open: lastCandle.close,
     close: newPrice,
-    high: Math.max(lastCandle.close, newPrice),
-    low: Math.min(lastCandle.close, newPrice),
+    high: Math.max(lastCandle.close, newPrice) + wickBuffer,
+    low: Math.min(lastCandle.close, newPrice) - wickBuffer,
   };
 
   const updated = [...prevCandles, newCandle];
@@ -395,24 +402,43 @@ export const fetchCandlePoints = async (
         typeof t === 'number'
       ) {
         const date = new Date(t * 1000);
+        const openVal = round(o);
+        const closeVal = round(c);
+        const spreadBuffer = Math.max((closeVal * 0.0008), asset.price > 100 ? 2 : 0.0004);
+        const highVal = Math.max(openVal, closeVal, round(h > l ? h : closeVal + spreadBuffer));
+        const lowVal = Math.min(openVal, closeVal, round(h > l ? l : closeVal - spreadBuffer));
+
         candles.push({
           timestamp: date.getTime(),
           timeLabel: formatTimeLabel(date, timeframe),
-          open: round(o),
-          high: round(h),
-          low: round(l),
-          close: round(c),
+          open: openVal,
+          high: highVal,
+          low: lowVal,
+          close: closeVal,
         });
       }
     }
 
     if (candles.length < 5) {
-      return generateRealisticCandles(asset.price, asset.changePercent, 25, timeframe);
+      return generateRealisticCandles(asset.price, asset.changePercent, 28, timeframe);
+    }
+
+    // If API returned fewer than 20 candles (e.g. market just opened), prepend historical candles
+    if (candles.length < 20) {
+      const needed = 25 - candles.length;
+      const firstCandle = candles[0];
+      const stepMs = 5 * 60 * 1000;
+      const prepended = generateRealisticCandles(firstCandle.open, 0, needed, timeframe).map((c, idx) => ({
+        ...c,
+        timestamp: firstCandle.timestamp - (needed - idx) * stepMs,
+        timeLabel: formatTimeLabel(new Date(firstCandle.timestamp - (needed - idx) * stepMs), timeframe),
+      }));
+      return [...prepended, ...candles].slice(-32);
     }
 
     return candles.slice(-32);
   } catch (err) {
     console.warn(`[ChartData] Falling back to generated candles for ${asset.symbol}:`, err);
-    return generateRealisticCandles(asset.price, asset.changePercent, 25, timeframe);
+    return generateRealisticCandles(asset.price, asset.changePercent, 28, timeframe);
   }
 };
