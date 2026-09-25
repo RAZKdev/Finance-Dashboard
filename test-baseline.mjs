@@ -68,6 +68,9 @@ import {
   generateRealisticHistory,
   appendLiveTick,
   fetchChartPoints,
+  generateRealisticCandles,
+  updateOrAppendLiveCandle,
+  fetchCandlePoints,
 } from './src/utils/chartData.ts';
 
 test('calculatePortfolioMetrics - complete gain scenario', () => {
@@ -978,6 +981,72 @@ test('fetchChartPoints - resolves to valid points array for any market asset', a
   assert.equal(points.length >= 5, true);
   assert.equal(points.every(p => typeof p.price === 'number' && p.price > 0), true);
 });
+
+test('generateRealisticCandles - produces valid OHLC candles with correct wick bounds', () => {
+  const candles = generateRealisticCandles(6225, 1.8, 20, 'LIVE');
+  assert.equal(candles.length, 20);
+  assert.equal(candles[candles.length - 1].close, 6225);
+
+  for (const c of candles) {
+    assert.equal(c.high >= c.open, true);
+    assert.equal(c.high >= c.close, true);
+    assert.equal(c.low <= c.open, true);
+    assert.equal(c.low <= c.close, true);
+    assert.equal(c.open > 0, true);
+    assert.equal(c.close > 0, true);
+    assert.equal(typeof c.timeLabel, 'string');
+  }
+});
+
+test('updateOrAppendLiveCandle - updates active candle and forms new candle after tick cycle', () => {
+  let candles = generateRealisticCandles(5000, 0, 10, 'LIVE');
+  const initialCount = candles.length;
+
+  // Tick 1: updates in-place
+  const tick1 = updateOrAppendLiveCandle(candles, 5050, 1);
+  assert.equal(tick1.candles.length, initialCount);
+  assert.equal(tick1.newTicksInCandle, 2);
+
+  // Tick 2: updates in-place
+  const tick2 = updateOrAppendLiveCandle(tick1.candles, 5100, tick1.newTicksInCandle);
+  assert.equal(tick2.candles.length, initialCount);
+  assert.equal(tick2.newTicksInCandle, 3);
+
+  // Tick 3: updates in-place
+  const tick3 = updateOrAppendLiveCandle(tick2.candles, 5120, tick2.newTicksInCandle);
+  assert.equal(tick3.candles.length, initialCount);
+  assert.equal(tick3.newTicksInCandle, 4);
+
+  // Tick 4: forms a brand-new candle!
+  const tick4 = updateOrAppendLiveCandle(tick3.candles, 5150, tick3.newTicksInCandle);
+  assert.equal(tick4.candles.length, initialCount + 1);
+  assert.equal(tick4.newTicksInCandle, 1);
+  assert.equal(tick4.candles[tick4.candles.length - 1].open, tick3.candles[tick3.candles.length - 1].close);
+});
+
+test('fetchCandlePoints - resolves to valid OHLC array for any market asset', async () => {
+  const asset = {
+    id: 'bmri',
+    symbol: 'BMRI',
+    name: 'Bank Mandiri',
+    type: 'stock',
+    price: 4070,
+    changePercent: -2.8,
+    currency: 'IDR',
+  };
+
+  const candles = await fetchCandlePoints(asset, 'LIVE');
+  assert.equal(Array.isArray(candles), true);
+  assert.equal(candles.length >= 5, true);
+  for (const c of candles) {
+    assert.equal(typeof c.open, 'number');
+    assert.equal(typeof c.high, 'number');
+    assert.equal(typeof c.low, 'number');
+    assert.equal(typeof c.close, 'number');
+    assert.equal(c.high >= c.low, true);
+  }
+});
+
 
 
 

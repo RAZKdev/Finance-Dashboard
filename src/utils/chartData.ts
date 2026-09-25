@@ -6,7 +6,18 @@ export interface ChartPoint {
   price: number;
 }
 
+export interface CandlePoint {
+  timestamp: number;
+  timeLabel: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
+
 export type ChartTimeframe = 'LIVE' | '1D' | '1W' | '1M';
+export type ChartType = 'candle' | 'line';
 
 const getSymbolForApi = (asset: MarketAsset): string => {
   const sym = asset.symbol.toUpperCase();
@@ -50,7 +61,7 @@ export const generateRealisticHistory = (
   let walkingPrice = startPrice;
   const priceDeltaTotal = currentPrice - startPrice;
   const driftPerStep = priceDeltaTotal / count;
-  const volatility = currentPrice * 0.003; // 0.3% volatility
+  const volatility = currentPrice * 0.003;
 
   for (let i = 0; i < count; i++) {
     const time = now - (count - 1 - i) * stepMs;
@@ -62,7 +73,6 @@ export const generateRealisticHistory = (
       walkingPrice += driftPerStep + randomShock;
     }
 
-    // Keep prices positive and reasonable
     walkingPrice = Math.max(walkingPrice, currentPrice * 0.5);
 
     points.push({
@@ -76,7 +86,55 @@ export const generateRealisticHistory = (
 };
 
 /**
- * Generate the next live tick for the running stream
+ * Generate realistic candlestick history
+ */
+export const generateRealisticCandles = (
+  currentPrice: number,
+  changePercent: number,
+  count: number = 28,
+  timeframe: ChartTimeframe = 'LIVE'
+): CandlePoint[] => {
+  const candles: CandlePoint[] = [];
+  const startPrice = currentPrice / (1 + changePercent / 100);
+  const now = Date.now();
+  const stepMs = timeframe === 'LIVE' ? 6000 : timeframe === '1D' ? 15 * 60 * 1000 : 3600 * 1000;
+
+  let walkingOpen = startPrice;
+  const priceDeltaTotal = currentPrice - startPrice;
+  const driftPerCandle = priceDeltaTotal / count;
+  const volatility = currentPrice * 0.004;
+
+  const round = (val: number) => (currentPrice > 100 ? Math.round(val) : Number(val.toFixed(4)));
+
+  for (let i = 0; i < count; i++) {
+    const time = now - (count - 1 - i) * stepMs;
+    const randomShock = (Math.random() - 0.48) * volatility;
+
+    let close = i === count - 1 ? currentPrice : walkingOpen + driftPerCandle + randomShock;
+    close = Math.max(close, currentPrice * 0.5);
+
+    const highExtra = Math.random() * (volatility * 0.8);
+    const lowExtra = Math.random() * (volatility * 0.8);
+    const high = Math.max(walkingOpen, close) + highExtra;
+    const low = Math.min(walkingOpen, close) - lowExtra;
+
+    candles.push({
+      timestamp: time,
+      timeLabel: formatTimeLabel(new Date(time), timeframe),
+      open: round(walkingOpen),
+      high: round(high),
+      low: round(low),
+      close: round(close),
+    });
+
+    walkingOpen = close;
+  }
+
+  return candles;
+};
+
+/**
+ * Generate the next live tick for the running line stream
  */
 export const appendLiveTick = (
   prevPoints: ChartPoint[],
@@ -86,7 +144,6 @@ export const appendLiveTick = (
   const lastPoint = prevPoints[prevPoints.length - 1];
   const lastPrice = lastPoint ? lastPoint.price : currentPrice;
 
-  // Realistic micro tick movement around latest price (drift towards currentPrice)
   const drift = (currentPrice - lastPrice) * 0.25;
   const microJiggle = (Math.random() - 0.49) * (currentPrice * 0.0015);
   let newPrice = lastPrice + drift + microJiggle;
@@ -109,6 +166,63 @@ export const appendLiveTick = (
     return updated.slice(updated.length - maxPoints);
   }
   return updated;
+};
+
+/**
+ * Update the active candle or form a new candle in real-time
+ */
+export const updateOrAppendLiveCandle = (
+  prevCandles: CandlePoint[],
+  currentPrice: number,
+  ticksInCurrentCandle: number
+): { candles: CandlePoint[]; newTicksInCandle: number } => {
+  const maxCandles = 32;
+  const ticksPerCandle = 4; // Form a new candle every 4 ticks
+
+  if (prevCandles.length === 0) {
+    return {
+      candles: generateRealisticCandles(currentPrice, 0, 1),
+      newTicksInCandle: 1,
+    };
+  }
+
+  const lastCandle = prevCandles[prevCandles.length - 1];
+  const lastPrice = lastCandle.close;
+
+  const drift = (currentPrice - lastPrice) * 0.2;
+  const microJiggle = (Math.random() - 0.49) * (currentPrice * 0.0018);
+  const newPrice = currentPrice > 100
+    ? Math.round(lastPrice + drift + microJiggle)
+    : Number((lastPrice + drift + microJiggle).toFixed(4));
+
+  if (ticksInCurrentCandle < ticksPerCandle) {
+    // Update existing active candle in-place
+    const updatedActiveCandle: CandlePoint = {
+      ...lastCandle,
+      close: newPrice,
+      high: Math.max(lastCandle.high, newPrice),
+      low: Math.min(lastCandle.low, newPrice),
+    };
+    const updated = [...prevCandles.slice(0, -1), updatedActiveCandle];
+    return { candles: updated, newTicksInCandle: ticksInCurrentCandle + 1 };
+  }
+
+  // Finalize candle and open a brand new candle
+  const now = new Date();
+  const newCandle: CandlePoint = {
+    timestamp: now.getTime(),
+    timeLabel: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    open: lastCandle.close,
+    close: newPrice,
+    high: Math.max(lastCandle.close, newPrice),
+    low: Math.min(lastCandle.close, newPrice),
+  };
+
+  const updated = [...prevCandles, newCandle];
+  if (updated.length > maxCandles) {
+    return { candles: updated.slice(updated.length - maxCandles), newTicksInCandle: 1 };
+  }
+  return { candles: updated, newTicksInCandle: 1 };
 };
 
 /**
@@ -195,5 +309,110 @@ export const fetchChartPoints = async (
   } catch (err) {
     console.warn(`[ChartData] Falling back to generated curve for ${asset.symbol}:`, err);
     return generateRealisticHistory(asset.price, asset.changePercent, 25, timeframe);
+  }
+};
+
+/**
+ * Fetch intraday candlestick (OHLC) points from Yahoo Finance API with graceful fallback
+ */
+export const fetchCandlePoints = async (
+  asset: MarketAsset,
+  timeframe: ChartTimeframe
+): Promise<CandlePoint[]> => {
+  const apiSymbol = getSymbolForApi(asset);
+
+  let range = '1d';
+  let interval = '15m';
+
+  if (timeframe === 'LIVE') {
+    range = '1d';
+    interval = '5m';
+  } else if (timeframe === '1D') {
+    range = '1d';
+    interval = '15m';
+  } else if (timeframe === '1W') {
+    range = '5d';
+    interval = '60m';
+  } else if (timeframe === '1M') {
+    range = '1mo';
+    interval = '1d';
+  }
+
+  const isBrowser = typeof window !== 'undefined';
+  const targetUrl = isBrowser
+    ? `/api/yahoo/v8/finance/chart/${apiSymbol}?interval=${interval}&range=${range}`
+    : `https://query1.finance.yahoo.com/v8/finance/chart/${apiSymbol}?interval=${interval}&range=${range}`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(targetUrl, {
+      signal: controller.signal,
+      headers: isBrowser
+        ? undefined
+        : {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      throw new Error(`API returned ${res.status}`);
+    }
+
+    const data = await res.json();
+    const resultObj = data?.chart?.result?.[0];
+    const timestamps: number[] = resultObj?.timestamp || [];
+    const quote = resultObj?.indicators?.quote?.[0];
+    const opens: (number | null)[] = quote?.open || [];
+    const highs: (number | null)[] = quote?.high || [];
+    const lows: (number | null)[] = quote?.low || [];
+    const closes: (number | null)[] = quote?.close || [];
+
+    if (!timestamps.length || !closes.length) {
+      return generateRealisticCandles(asset.price, asset.changePercent, 25, timeframe);
+    }
+
+    const candles: CandlePoint[] = [];
+    const round = (val: number) => (asset.price > 100 ? Math.round(val) : Number(val.toFixed(4)));
+
+    for (let i = 0; i < timestamps.length; i++) {
+      const o = opens[i];
+      const h = highs[i];
+      const l = lows[i];
+      const c = closes[i];
+      const t = timestamps[i];
+
+      if (
+        typeof o === 'number' &&
+        typeof h === 'number' &&
+        typeof l === 'number' &&
+        typeof c === 'number' &&
+        Number.isFinite(c) &&
+        typeof t === 'number'
+      ) {
+        const date = new Date(t * 1000);
+        candles.push({
+          timestamp: date.getTime(),
+          timeLabel: formatTimeLabel(date, timeframe),
+          open: round(o),
+          high: round(h),
+          low: round(l),
+          close: round(c),
+        });
+      }
+    }
+
+    if (candles.length < 5) {
+      return generateRealisticCandles(asset.price, asset.changePercent, 25, timeframe);
+    }
+
+    return candles.slice(-32);
+  } catch (err) {
+    console.warn(`[ChartData] Falling back to generated candles for ${asset.symbol}:`, err);
+    return generateRealisticCandles(asset.price, asset.changePercent, 25, timeframe);
   }
 };
