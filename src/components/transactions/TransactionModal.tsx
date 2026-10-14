@@ -45,14 +45,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="transaction-modal-title"
       onClick={onClose}
     >
       <Card
-        className="w-full max-w-md"
+        className="w-full max-w-md my-auto max-h-[90vh] overflow-y-auto scrollbar-thin"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-6 flex items-center justify-between gap-4">

@@ -205,7 +205,7 @@ export const PortfolioForm: React.FC<PortfolioFormProps> = ({
         </p>
       )}
 
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-6 flex items-center justify-end gap-2 border-t border-border bg-surface/95 px-6 py-3.5 backdrop-blur-xs">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>

@@ -236,14 +236,14 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="backup-modal-title"
       onClick={handleClose}
     >
       <Card
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-lg my-auto max-h-[90vh] overflow-y-auto scrollbar-thin"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
