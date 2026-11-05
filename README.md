@@ -1,105 +1,94 @@
 # Finance Dashboard
 
-> **Personal Financial Workstation** — Analitis, presisi, transparan, dan berfokus pada integritas data keuangan tanpa distraksi.
+> Personal financial workstation yang lokal-first, transparan, dan fokus pada integritas data keuangan.
 
----
+## 1. Deskripsi Proyek
 
-## Deskripsi & Identitas Proyek
+**Finance Dashboard** adalah aplikasi keuangan pribadi yang menggabungkan pencatatan multi-rekening, anggaran bulanan, analitik arus kas, portofolio investasi, backup/restore, dan pemantauan pasar dalam satu antarmuka. Seluruh data disimpan di browser pengguna melalui `localStorage`; tidak ada transaksi atau kekayaan pribadi yang dikirim ke server pihak ketiga.
 
-**Finance Dashboard** adalah platform workstation keuangan pribadi (*personal finance and investment workstation*) modern yang dirancang untuk memberikan kendali penuh atas posisi finansial Anda.
+## 2. Kenapa Proyek Ini Dibuat
 
-Aplikasi ini menggabungkan pencatatan multi-rekening kas/bank, alokasi aset portofolio investasi, sistem anggaran bulanan (*budgeting*), visualisasi analitik arus kas (*cashflow*), serta sistem ekspor/cadangan data lokal dalam satu antarmuka terpadu yang cepat dan elegan.
+Banyak aplikasi keuangan memprioritaskan visual yang ramai, warna neon, dan metrik yang sulit diverifikasi. Akibatnya, pengguna melihat angka yang terasa "pintar" tetapi tidak dapat direkonsiliasi dengan mutasi rekening sebenarnya.
 
----
+Finance Dashboard dibuat untuk:
 
-## Alasan Dibuat (*Why This Project Exists*)
+- **Menjaga integritas ledger:** saldo akun dihitung dari saldo awal + pemasukan − pengeluaran, bukan angka statis.
+- **Menghindari estetika "casino trading":** tampilan tenang, profesional, dan jujur terhadap data.
+- **Menjaga privasi:** data tetap di perangkat pengguna.
+- **Memberi kendali penuh:** pengguna dapat mengekspor seluruh data ke JSON/CSV dan memulihkannya kapan saja.
+- **Membantu pengambilan keputusan:** anggaran, arus kas, dan portofolio disajikan dalam satu dashboard.
 
-1. **Menghindari Estetika "Casino Trading" & Angka Semu**:
-   Banyak aplikasi keuangan modern terjebak dalam visualisasi berlebihan, warna neon agresif, dan metrik yang membingungkan. Finance Dashboard dibangun dengan filosofi desain yang tenang (*calm*), profesional, dan jujur terhadap data moneter.
-2. **Integritas Matematis & Rekonsiliasi Kas Riil**:
-   Seringkali aplikasi pencatat keuangan memisahkan saldo rekening dengan mutasi transaksi, menyebabkan angka saldo menjadi statis atau tidak sinkron. Finance Dashboard menerapkan prinsip *ledger*: saldo akun selalu dihitung secara matematis dari saldo awal ditambah total pemasukan dikurangi pengeluaran.
-3. **Privasi & Kedaulatan Data (*Privacy & Data Sovereignty First*)**:
-   Data keuangan adalah informasi yang sangat sensitif. Aplikasi ini menyimpan seluruh data secara lokal di perangkat pengguna melalui `localStorage` terenkapsulasi, tanpa mengirimkan rekaman transaksi atau kekayaan pribadi ke server pihak ketiga.
-4. **Portabilitas & Kebebasan Pengguna**:
-   Pengguna memiliki kendali penuh untuk mencadangkan seluruh basis data ke dalam satu file JSON terenkripsi/terverifikasi, atau mengekspor tabel transaksi, akun, portofolio, dan anggaran ke dalam format CSV standar yang dapat diolah lebih lanjut menggunakan Microsoft Excel atau Google Sheets.
+## 3. Fungsi & Fitur Utama
 
----
+1. **Full Account Ledger** — mendukung rekening bank, tunai, e-wallet, dan lainnya; saldo dihitung dari mutasi transaksi; tersedia riwayat per rekening.
+2. **Budget vs Realization** — batas pengeluaran per kategori dan bulan (`YYYY-MM`), rekonsiliasi otomatis dengan transaksi riil, serta status `On Track`, `Near Limit`, dan `Over Budget`.
+3. **Cashflow Analytics** — grafik inflow/outflow enam bulan, savings rate, dan analisis tren pengeluaran per kategori (month-over-month).
+4. **Portfolio & Asset Management** — pelacakan saham, kripto, forex, dan kas; cost basis, market value, profit/loss, serta deteksi konsentrasi aset.
+5. **Export, Backup & Restore** — snapshot JSON untuk seluruh data, opsi replace/merge, dan ekspor CSV untuk transaksi, rekening, portofolio, serta anggaran.
+6. **Quick Search & Filter** — pencarian dan filter transaksi berdasarkan judul, kategori, jenis, atau tanggal.
+7. **Live Market Feed** — kurs forex, harga kripto, dan saham IHSG melalui API/proxy; dilengkapi snapshot lokal dan tombol refresh manual.
+8. **Candlestick Chart** — chart OHLC interaktif dengan mode candlestick/line, timeframe, crosshair, dan perpindahan aset cepat.
+9. **Keamanan Data** — sanitasi CSV untuk mencegah formula injection dan tidak ada pengumpulan data ke server.
 
-## Bahasa Pemrograman & Teknologi yang Digunakan
+## 4. Bahasa Pemrograman & Teknologi
 
-Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript murni dengan dependensi yang ramping dan efisien:
+| Lapisan | Teknologi |
+| --- | --- |
+| Bahasa utama | TypeScript |
+| UI | React 19, Tailwind CSS 4 |
+| Build tool | Vite 8 |
+| Penyimpanan | `localStorage` |
+| Testing | Node.js native test runner (`node --test`) |
+| Lint | ESLint 10 |
 
-- **Bahasa Pemrograman**:
-  - [TypeScript](https://www.typescriptlang.org/) — Menjamin keamanan tipe (*type safety*), validasi kontrak domain model yang ketat, dan meminimalkan potensi runtime error.
-- **Frontend Framework & Library**:
-  - [React 19](https://react.dev/) — Pustaka antarmuka deklaratif berbasis komponen fungsional dan hooks modern.
-  - [Tailwind CSS v4](https://tailwindcss.com/) — Engine styling generasi terbaru untuk visual workstation finansial premium (dark theme native).
-  - [Vite 8](https://vite.dev/) — Tooling pengembangan dan bundler ultra-cepat dengan Hot Module Replacement (HMR).
-- **Testing & Quality Assurance**:
-  - **Node.js Test Runner Native (`node --test`)** — Menjalankan automated test suite tanpa overhead library testing eksternal.
-  - [ESLint 10](https://eslint.org/) — Analisis statis kode untuk memastikan konsistensi dan kepatuhan standar kode.
+## 5. Struktur Direktori
 
----
+```text
+Finance-Dashboard/
+├── src/
+│   ├── components/          # Accounts, budgets, cashflow, portfolio, markets, transactions, UI
+│   ├── data/                # Seed data dan definisi pasar
+│   ├── types/               # Tipe domain keuangan
+│   ├── utils/               # Perhitungan akun, anggaran, cashflow, portofolio, backup
+│   ├── App.tsx
+│   └── main.tsx
+├── test-baseline.mjs        # Pengujian baseline
+├── start.bat                # Launcher Windows
+├── vite.config.ts
+└── package.json
+```
 
-## Fitur & Fungsi Utama
+## 6. Cara Menjalankan
 
-### 1. Full Account Ledger Integration
-- Mendukung multi-rekening: **Bank**, **Tunai/Cash**, **E-Wallet**, dan rekening lainnya.
-- Perhitungan saldo dinamis berbasis buku besar (*ledger*):
-  $$\text{Saldo Akhir} = \text{Opening Balance} + \sum(\text{Pemasukan Terkait}) - \sum(\text{Pengeluaran Terkait})$$
-- Menampilkan rincian mutasi bersih dan riwayat aktivitas transaksi per rekening.
+**Prasyarat:** Node.js 18+ dan npm.
 
-### 2. Budget vs Realization Engine
-- Menentukan batas pengeluaran bulanan (*spending limit*) per kategori untuk bulan target tertentu (`YYYY-MM`).
-- Rekonsiliasi pengeluaran riil otomatis: mengagregasi seluruh transaksi pengeluaran pada bulan dan kategori yang bersangkutan.
-- Indikator status semantik:
-  - **On Track** ($< 80\%$ limit)
-  - **Near Limit** ($\ge 80\%$ s.d. $100\%$ limit)
-  - **Over Budget** ($> 100\%$ limit)
-- Ringkasan kesehatan anggaran bulanan (*budget health summary*) di dashboard utama.
+```bash
+npm install
+npm run dev
+```
 
-### 3. Cashflow Analytics & Trend Visualizer
-- **Dual-Column Comparison Chart**: Grafik perbandingan kolom bulanan antara *Inflow* (pemasukan) dan *Outflow* (pengeluaran) dalam jendela waktu 6 bulan berurutan.
-- **Rasio Tabungan (*Savings Rate*)**: Menghitung efisiensi tabungan bulanan secara transparan.
-- **Category Expense Trend & MoM Shifts**: Menganalisis pergeseran kenaikan atau penurunan biaya per kategori dibandingkan bulan sebelumnya (*Month-over-Month change*).
+Buka `http://localhost:5173`.
 
-### 4. Portfolio & Asset Management
-- Pelacakan alokasi aset investasi: Saham, Kripto, Forex, dan Kas.
-- Metrik performa investasi: *Cost Basis*, *Market Value*, serta *Profit & Loss* ($/ \%) yang objektif.
-- Analisis kualitas portofolio dan deteksi risiko konsentrasi aset.
+Di Windows, `start.bat` juga tersedia.
 
-### 5. Export, Backup & Restore System
-- **Full JSON Snapshot**: Cadangkan seluruh akun, transaksi, portofolio, dan anggaran dalam 1 file JSON terverifikasi.
-- **Strategi Pemulihan Fleksibel**:
-  - *Replace All*: Menimpa data dengan data backup.
-  - *Merge with Current*: Menggabungkan data cadangan tanpa menghapus data aktif.
-- **CSV Tabular Export**: Unduh data secara terpisah ke dalam format `.csv` untuk Transaksi, Rekening, Portofolio, dan Anggaran.
+**Build produksi:**
 
-### 6. Quick Search & Filter Transaksi
-- Pencarian instan dan penyaringan transaksi berdasarkan judul, kategori, jenis transaksi (*income* / *expense*), atau tanggal.
+```bash
+npm run build
+npm run preview
+```
 
-### 7. Live Market Feed (Forex, Kripto & Saham IHSG)
-- **Forex / Valuta Asing**: Integrasi langsung dengan *ExchangeRate-API* untuk kurs real-time USD/IDR, EUR/USD, dan EUR/IDR.
-- **Kripto**: Integrasi live data ticker Binance untuk pergerakan harga Bitcoin (BTC) dan Ethereum (ETH) 24 jam.
-- **Saham Indonesia (IHSG / IDX)**: Integrasi kuotasi saham Bursa Efek Indonesia (BBCA, BMRI, BBRI, TLKM) melalui Vite reverse proxy.
-- **Resilience & Financial Honesty**: Proteksi offline dengan snapshot lokal di `localStorage`, timestamp pembaruan transparan, dan tombol *refresh* manual on-demand.
+## 7. Pengujian
 
-### 8. Live Running Candlestick (OHLC) Chart
-- **Real-Time Candlestick Bars**: Menampilkan candlestick lengkap dengan badan (*body*) dan sumbu atas/bawah (*upper/lower wicks*) berbasis data riil bursa (Open, High, Low, Close).
-- **Active Candle Live Dynamics**: Candle paling kanan bergerak aktif mengikuti *price tick* terkini (memperbarui Close, High, dan Low secara *real-time*), dan membentuk candle baru saat siklus interval selesai.
-- **TradingView-Style OHLC Header**: Bar informasi interaktif di atas chart yang menampilkan nilai presisi Open (O), High (H), Low (L), Close (C), dan persentase perubahan saat kursor diarahkan ke candle manapun.
-- **Dual Chart Mode Toggle**: Bebas beralih antara **Candlestick** (default) dan **Line** curve kapan saja.
-- **Pulsing Price Tracker & Crosshair**: Garis horizontal putus-putus dengan label harga berkedip di sumbu Y yang melacak harga aktif, serta garis silang (*crosshair*) saat inspeksi pointer.
-- **Multi-Timeframe & Controls**: Pilihan timeframe `Live`, `1D`, `1W`, `1M`, serta tombol *Pause/Resume* aliran candle.
-- **Instant Asset Switcher**: Tombol cepat untuk beralih instan antar saham IHSG (BBCA, BMRI, BBRI, TLKM), Kripto (BTC, ETH), dan Forex (USD/IDR, EUR/USD, XAU/USD).
+```bash
+npm test
+npm run lint
+```
 
----
+Pengujian baseline mencakup perhitungan ledger, anggaran, arus kas, portofolio, dan utilitas backup.
 
-## Keamanan & Kebijakan Data
-- **Tanpa Pengumpulan Data**: Seluruh data tersimpan secara eksklusif pada peramban lokal Anda.
-- **Pembersihan CSV**: Mencegah kerentanan formula injection pada spreadsheet dengan sanitasi karakter koma, kutip ganda, dan baris baru.
+## 8. Catatan & Lisensi
 
----
-
-## Lisensi
-Didistribusikan di bawah lisensi terbuka untuk penggunaan pribadi dan edukasi.
+- Data keuangan disimpan di browser; gunakan backup JSON secara berkala.
+- Fitur live market membutuhkan koneksi internet; data terakhir disimpan sebagai snapshot lokal.
+- Proyek ini ditujukan untuk penggunaan pribadi dan edukasi. Belum ada berkas lisensi di repo.
