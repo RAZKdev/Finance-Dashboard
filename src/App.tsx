@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
-  Badge,
   Button,
   Card,
   SectionHeader,
@@ -19,9 +18,7 @@ import {
 } from './components/budgets';
 import {
   CashflowView,
-  CashflowMiniCard,
 } from './components/cashflow';
-import { BackupModal } from './components/backup';
 import type {
   Account,
   AppBackupData,
@@ -29,24 +26,22 @@ import type {
   PortfolioAsset,
   Transaction,
 } from './types/finance';
-import { Navigation } from './components/navigation';
+import { Sidebar } from './components/navigation';
+import { useLanguage } from './i18n/LanguageContext';
+import { useAuth } from './auth/AuthContext';
+import { useTheme } from './theme/ThemeContext';
+import { formatRupiah } from './utils/currency';
+import { AuthModal } from './components/auth/AuthModal';
 import {
-  DashboardStats,
-  BudgetOverviewCard,
+  FazztrackOverview,
 } from './components/dashboard';
 import {
-  PortfolioAllocation,
-  PortfolioAnalytics,
   PortfolioList,
   PortfolioModal,
-  PortfolioQuality,
 } from './components/portfolio';
-import { MarketList } from './components/markets';
-import { QuickSearch } from './components/search';
 import { transactions } from './data/transactions';
 import { portfolioAssets } from './data/portfolio';
-import { accounts } from './data/accounts';
-import { budgets } from './data/budgets';
+import { demoAccounts, demoBudgets, demoPortfolio, demoTransactions } from './data/demoData';
 import {
   createAccount,
   deleteAccount,
@@ -69,69 +64,47 @@ import {
   syncLiveMarketAssets,
 } from './utils/marketLive';
 import {
-  calculatePortfolioAllocation,
-  calculatePortfolioAnalytics,
-  calculatePortfolioQuality,
-  getPortfolioValue,
-} from './utils/portfolio';
-import {
   validateTransaction,
 } from './utils/transactions';
 
-const TRANSACTIONS_STORAGE_KEY =
-  'finance-dashboard-transactions-v1';
+const MarketList = lazy(() =>
+  import('./components/markets').then((module) => ({
+    default: module.MarketList,
+  }))
+);
 
-const PORTFOLIO_STORAGE_KEY =
-  'finance-dashboard-portfolio-v1';
+const BackupModal = lazy(() =>
+  import('./components/backup').then((module) => ({
+    default: module.BackupModal,
+  }))
+);
 
-const loadTransactions = (
-  accountList: Account[]
-): Transaction[] => {
+const TRANSACTIONS_STORAGE_KEY = 'finance-dashboard-transactions-v1';
+const PORTFOLIO_STORAGE_KEY = 'finance-dashboard-portfolio-v1';
+
+const loadTransactions = (accountList: Account[]): Transaction[] => {
   try {
-    const stored = localStorage.getItem(
-      TRANSACTIONS_STORAGE_KEY
-    );
-
-    if (!stored) {
-      return transactions;
-    }
-
+    const stored = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
+    if (!stored) return transactions;
     const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return transactions;
 
-    if (!Array.isArray(parsed)) {
-      return transactions;
-    }
-
-    const candidates = parsed.filter(
-      (item): item is Transaction => {
-        if (!item || typeof item !== 'object') {
-          return false;
-        }
-
-        const value = item as Record<string, unknown>;
-
-        return (
-          typeof value.id === 'string' &&
-          typeof value.title === 'string' &&
-          typeof value.amount === 'number' &&
-          (value.type === 'income' ||
-            value.type === 'expense') &&
-          typeof value.category === 'string' &&
-          typeof value.date === 'string' &&
-          (
-            value.accountId === undefined ||
-            typeof value.accountId === 'string'
-          )
-        );
-      }
-    );
+    const candidates = parsed.filter((item): item is Transaction => {
+      if (!item || typeof item !== 'object') return false;
+      const value = item as Record<string, unknown>;
+      return (
+        typeof value.id === 'string' &&
+        typeof value.title === 'string' &&
+        typeof value.amount === 'number' &&
+        (value.type === 'income' || value.type === 'expense') &&
+        typeof value.category === 'string' &&
+        typeof value.date === 'string' &&
+        (value.accountId === undefined || typeof value.accountId === 'string')
+      );
+    });
 
     return candidates.filter(
-      (transaction) =>
-        validateTransaction(
-          transaction,
-          accountList
-        ).valid
+      (transaction) => validateTransaction(transaction, accountList).valid
     );
   } catch {
     return transactions;
@@ -140,29 +113,15 @@ const loadTransactions = (
 
 const loadPortfolio = (): PortfolioAsset[] => {
   try {
-    const stored = localStorage.getItem(
-      PORTFOLIO_STORAGE_KEY
-    );
-
-    if (!stored) {
-      return portfolioAssets;
-    }
-
+    const stored = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
+    if (!stored) return portfolioAssets;
     const parsed: unknown = JSON.parse(stored);
-
-    if (!Array.isArray(parsed)) {
-      return portfolioAssets;
-    }
+    if (!Array.isArray(parsed)) return portfolioAssets;
 
     const validAssets: PortfolioAsset[] = [];
-
     for (const item of parsed) {
-      if (!item || typeof item !== 'object') {
-        continue;
-      }
-
+      if (!item || typeof item !== 'object') continue;
       const value = item as Record<string, unknown>;
-
       if (
         typeof value.id !== 'string' ||
         !value.id.trim() ||
@@ -184,7 +143,6 @@ const loadPortfolio = (): PortfolioAsset[] => {
       if (typeof value.symbol === 'string' && value.symbol.trim()) {
         asset.symbol = value.symbol.trim();
       }
-
       if (
         value.assetType === 'stock' ||
         value.assetType === 'crypto' ||
@@ -193,7 +151,6 @@ const loadPortfolio = (): PortfolioAsset[] => {
       ) {
         asset.assetType = value.assetType;
       }
-
       if (
         typeof value.quantity === 'number' &&
         Number.isFinite(value.quantity) &&
@@ -201,7 +158,6 @@ const loadPortfolio = (): PortfolioAsset[] => {
       ) {
         asset.quantity = value.quantity;
       }
-
       if (
         typeof value.averageBuyPrice === 'number' &&
         Number.isFinite(value.averageBuyPrice) &&
@@ -209,7 +165,6 @@ const loadPortfolio = (): PortfolioAsset[] => {
       ) {
         asset.averageBuyPrice = value.averageBuyPrice;
       }
-
       if (
         typeof value.currentPrice === 'number' &&
         Number.isFinite(value.currentPrice) &&
@@ -217,7 +172,6 @@ const loadPortfolio = (): PortfolioAsset[] => {
       ) {
         asset.currentPrice = value.currentPrice;
       }
-
       if (typeof value.currency === 'string' && value.currency.trim()) {
         asset.currency = value.currency.trim();
       }
@@ -231,54 +185,35 @@ const loadPortfolio = (): PortfolioAsset[] => {
   }
 };
 
-function App() {
-  const [activeTab, setActiveTab] = useState('Overview');
+export function App() {
+  const { t, lang, toggleLang } = useLanguage();
+  const { user, openAuthModal, isSupabaseConfigured } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
-  const [isTransactionModalOpen, setIsTransactionModalOpen] =
-    useState(false);
-
-  const [accountList, setAccountList] =
-    useState<Account[]>(() => loadAccounts(accounts));
-
-  const [transactionList, setTransactionList] =
-    useState<Transaction[]>(() =>
-      loadTransactions(accountList)
-    );
-
-  const [editingAccount, setEditingAccount] =
-    useState<Account | null>(null);
-
-  const [isAccountModalOpen, setIsAccountModalOpen] =
-    useState(false);
-
-  const [editingTransaction, setEditingTransaction] =
-    useState<Transaction | null>(null);
-
-  const [isPortfolioModalOpen, setIsPortfolioModalOpen] =
-    useState(false);
-
-  const [portfolioList, setPortfolioList] =
-    useState<PortfolioAsset[]>(loadPortfolio);
-
-  const [editingPortfolioAsset, setEditingPortfolioAsset] =
-    useState<PortfolioAsset | null>(null);
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeSearchQuery, setActiveSearchQuery] =
-    useState('');
-
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const [budgetList, setBudgetList] = useState<Budget[]>(() =>
-    loadBudgets(budgets)
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [accountList, setAccountList] = useState<Account[]>(loadAccounts);
+  const [transactionList, setTransactionList] = useState<Transaction[]>(() =>
+    loadTransactions(loadAccounts())
   );
-  const [editingBudget, setEditingBudget] =
-    useState<Budget | null>(null);
-  const [isBudgetModalOpen, setIsBudgetModalOpen] =
-    useState(false);
-  const [isBackupModalOpen, setIsBackupModalOpen] =
-    useState(false);
-  const [selectedBudgetMonth, setSelectedBudgetMonth] =
-    useState<string>(currentMonth);
+  const [portfolioList, setPortfolioList] = useState<PortfolioAsset[]>(loadPortfolio);
+  const [budgetList, setBudgetList] = useState<Budget[]>(loadBudgets);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSearchQuery, setActiveSearchQuery] = useState('');
+
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
+  const [editingPortfolioAsset, setEditingPortfolioAsset] = useState<PortfolioAsset | null>(null);
+
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
+  const [selectedBudgetMonth, setSelectedBudgetMonth] = useState('2024-03');
+
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   const [marketList, setMarketList] = useState<MarketAsset[]>(() => {
     const { assets } = loadCachedMarketAssets(marketAssets);
@@ -306,7 +241,6 @@ function App() {
 
   useEffect(() => {
     let ignore = false;
-
     const timer = setTimeout(() => {
       void (async () => {
         setIsSyncingMarkets(true);
@@ -335,12 +269,9 @@ function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(
-        TRANSACTIONS_STORAGE_KEY,
-        JSON.stringify(transactionList)
-      );
+      localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactionList));
     } catch {
-      // Keep the app usable if localStorage is unavailable.
+      // Keep app usable
     }
   }, [transactionList]);
 
@@ -350,12 +281,9 @@ function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(
-        PORTFOLIO_STORAGE_KEY,
-        JSON.stringify(portfolioList)
-      );
+      localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(portfolioList));
     } catch {
-      // Keep the app usable if localStorage is unavailable.
+      // Keep app usable
     }
   }, [portfolioList]);
 
@@ -363,190 +291,44 @@ function App() {
     saveBudgets(budgetList);
   }, [budgetList]);
 
-  const filteredTransactions = transactionList.filter(
-    (transaction) => {
-      const query = activeSearchQuery
-        .trim()
-        .toLowerCase();
+  const filteredTransactions = transactionList.filter((transaction) => {
+    const query = activeSearchQuery.trim().toLowerCase();
+    if (!query) return true;
+    return [
+      transaction.title,
+      transaction.category,
+      transaction.type,
+      transaction.date,
+    ].some((value) => value.toLowerCase().includes(query));
+  });
 
-      if (!query) {
-        return true;
-      }
-
-      return [
-        transaction.title,
-        transaction.category,
-        transaction.type,
-        transaction.date,
-      ].some((value) =>
-        value.toLowerCase().includes(query)
-      );
-    }
-  );
-
-  const portfolioAnalytics =
-    calculatePortfolioAnalytics(portfolioList);
-
-  const portfolioAllocation =
-    calculatePortfolioAllocation(portfolioList);
-
-  const portfolioQuality =
-    calculatePortfolioQuality(portfolioList);
-
-  const portfolioValue = portfolioList.reduce(
-    (sum, asset) => sum + getPortfolioValue(asset),
-    0
-  );
-
-  const portfolioProfitLoss =
-    portfolioAnalytics.totalProfitLoss;
-
-  const portfolioProfitLossPercent =
-    portfolioAnalytics.totalProfitLossPercent;
-
-
-  const handleSearch = () => {
-    setActiveSearchQuery(searchQuery);
-  };
-
-  const handleEditTransaction = (
-    transaction: Transaction
-  ) => {
+  const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setIsTransactionModalOpen(true);
   };
 
-  const handleSaveTransaction = (
-    transaction: Transaction
-  ) => {
-    const validation = validateTransaction(
-      transaction,
-      accountList
-    );
-
+  const handleSaveTransaction = (transaction: Transaction) => {
+    const validation = validateTransaction(transaction, accountList);
     if (!validation.valid) {
-      window.alert(validation.errors.join('\\n'));
+      window.alert(validation.errors.join('\n'));
       return;
     }
 
     if (editingTransaction) {
       setTransactionList((current) =>
-        current.map((item) =>
-          item.id === transaction.id
-            ? transaction
-            : item
-        )
+        current.map((item) => (item.id === transaction.id ? transaction : item))
       );
     } else {
-      setTransactionList((current) => [
-        transaction,
-        ...current,
-      ]);
+      setTransactionList((current) => [transaction, ...current]);
     }
-
     setIsTransactionModalOpen(false);
     setEditingTransaction(null);
   };
 
-  const handleDeleteTransaction = (
-    transactionId: string
-  ) => {
-    setTransactionList((current) =>
-      current.filter(
-        (transaction) =>
-          transaction.id !== transactionId
-      )
-    );
-  };
-
-  const handleSaveAccount = (account: Account) => {
-    setAccountList((current) => {
-      const result = editingAccount
-        ? updateAccount(current, account)
-        : createAccount(current, account);
-
-      return result.success ? result.accounts : current;
-    });
-
-    setIsAccountModalOpen(false);
-    setEditingAccount(null);
-  };
-
-  const handleEditAccount = (account: Account) => {
-    setEditingAccount(account);
-    setIsAccountModalOpen(true);
-  };
-
-  const handleDeleteAccount = (accountId: string) => {
-    const isAccountInUse = transactionList.some(
-      (transaction) =>
-        transaction.accountId === accountId
-    );
-
-    if (isAccountInUse) {
-      window.alert(
-        'This account cannot be deleted because it is linked to one or more transactions.'
-      );
-      return;
+  const handleDeleteTransaction = (id: string) => {
+    if (window.confirm('Hapus transaksi ini?')) {
+      setTransactionList((current) => current.filter((item) => item.id !== id));
     }
-
-    setAccountList((current) => {
-      const result = deleteAccount(current, accountId);
-
-      if (!result.success) {
-        window.alert(result.errors.join('\\n'));
-        return current;
-      }
-
-      return result.accounts;
-    });
-  };
-
-  const openAddAccount = () => {
-    setEditingAccount(null);
-    setIsAccountModalOpen(true);
-  };
-
-  const handleSavePortfolio = (
-    asset: PortfolioAsset
-  ) => {
-    if (editingPortfolioAsset) {
-      setPortfolioList((current) =>
-        current.map((item) =>
-          item.id === asset.id ? asset : item
-        )
-      );
-    } else {
-      setPortfolioList((current) => [
-        asset,
-        ...current,
-      ]);
-    }
-
-    setIsPortfolioModalOpen(false);
-    setEditingPortfolioAsset(null);
-  };
-
-  const handleEditPortfolio = (
-    asset: PortfolioAsset
-  ) => {
-    setEditingPortfolioAsset(asset);
-    setIsPortfolioModalOpen(true);
-  };
-
-  const handleDeletePortfolio = (
-    assetId: string
-  ) => {
-    setPortfolioList((current) =>
-      current.filter(
-        (asset) => asset.id !== assetId
-      )
-    );
-  };
-
-  const openAddPortfolio = () => {
-    setEditingPortfolioAsset(null);
-    setIsPortfolioModalOpen(true);
   };
 
   const openAddTransaction = () => {
@@ -554,22 +336,73 @@ function App() {
     setIsTransactionModalOpen(true);
   };
 
-  const handleSaveBudget = (budget: Budget) => {
-    setBudgetList((current) => {
-      const result = editingBudget
-        ? updateBudget(current, budget)
-        : createBudget(current, budget);
+  const handleEditPortfolio = (asset: PortfolioAsset) => {
+    setEditingPortfolioAsset(asset);
+    setIsPortfolioModalOpen(true);
+  };
 
+  const handleSavePortfolio = (asset: PortfolioAsset) => {
+    if (editingPortfolioAsset) {
+      setPortfolioList((current) =>
+        current.map((item) => (item.id === asset.id ? asset : item))
+      );
+    } else {
+      setPortfolioList((current) => [...current, asset]);
+    }
+    setIsPortfolioModalOpen(false);
+    setEditingPortfolioAsset(null);
+  };
+
+  const handleDeletePortfolio = (id: string) => {
+    if (window.confirm('Hapus aset ini?')) {
+      setPortfolioList((current) => current.filter((item) => item.id !== id));
+    }
+  };
+
+  const openAddPortfolio = () => {
+    setEditingPortfolioAsset(null);
+    setIsPortfolioModalOpen(true);
+  };
+
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setIsAccountModalOpen(true);
+  };
+
+  const handleSaveAccount = (account: Account) => {
+    if (editingAccount) {
+      const result = updateAccount(accountList, account);
       if (!result.success) {
         window.alert(result.errors.join('\n'));
-        return current;
+        return;
       }
+      setAccountList(result.accounts);
+    } else {
+      const result = createAccount(accountList, account);
+      if (!result.success) {
+        window.alert(result.errors.join('\n'));
+        return;
+      }
+      setAccountList(result.accounts);
+    }
+    setIsAccountModalOpen(false);
+    setEditingAccount(null);
+  };
 
-      return result.budgets;
-    });
+  const handleDeleteAccount = (id: string) => {
+    if (window.confirm('Hapus akun ini?')) {
+      const result = deleteAccount(accountList, id);
+      if (!result.success) {
+        window.alert(result.errors.join('\n'));
+        return;
+      }
+      setAccountList(result.accounts);
+    }
+  };
 
-    setIsBudgetModalOpen(false);
-    setEditingBudget(null);
+  const openAddAccount = () => {
+    setEditingAccount(null);
+    setIsAccountModalOpen(true);
   };
 
   const handleEditBudget = (budget: Budget) => {
@@ -577,17 +410,35 @@ function App() {
     setIsBudgetModalOpen(true);
   };
 
-  const handleDeleteBudget = (budgetId: string) => {
-    setBudgetList((current) => {
-      const result = deleteBudget(current, budgetId);
-
+  const handleSaveBudget = (budget: Budget) => {
+    if (editingBudget) {
+      const result = updateBudget(budgetList, budget);
       if (!result.success) {
         window.alert(result.errors.join('\n'));
-        return current;
+        return;
       }
+      setBudgetList(result.budgets);
+    } else {
+      const result = createBudget(budgetList, budget);
+      if (!result.success) {
+        window.alert(result.errors.join('\n'));
+        return;
+      }
+      setBudgetList(result.budgets);
+    }
+    setIsBudgetModalOpen(false);
+    setEditingBudget(null);
+  };
 
-      return result.budgets;
-    });
+  const handleDeleteBudget = (id: string) => {
+    if (window.confirm('Hapus anggaran ini?')) {
+      const result = deleteBudget(budgetList, id);
+      if (!result.success) {
+        window.alert(result.errors.join('\n'));
+        return;
+      }
+      setBudgetList(result.budgets);
+    }
   };
 
   const openAddBudget = () => {
@@ -602,20 +453,63 @@ function App() {
     setBudgetList(data.budgets);
   };
 
+  const handleLoadDemoData = () => {
+    setAccountList(demoAccounts);
+    saveAccounts(demoAccounts);
+
+    setTransactionList(demoTransactions);
+    try {
+      localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(demoTransactions));
+    } catch {}
+
+    setPortfolioList(demoPortfolio);
+    try {
+      localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(demoPortfolio));
+    } catch {}
+
+    setBudgetList(demoBudgets);
+    saveBudgets(demoBudgets);
+  };
+
+  const handleClearAllData = () => {
+    if (window.confirm('Kosongkan semua data ke Rp 0? Seluruh mutasi transaksi, rekening, dan portofolio lokal akan dihapus.')) {
+      setAccountList([]);
+      saveAccounts([]);
+
+      setTransactionList([]);
+      try {
+        localStorage.removeItem(TRANSACTIONS_STORAGE_KEY);
+      } catch {}
+
+      setPortfolioList([]);
+      try {
+        localStorage.removeItem(PORTFOLIO_STORAGE_KEY);
+      } catch {}
+
+      setBudgetList([]);
+      saveBudgets([]);
+    }
+  };
+
   const existingCategories = Array.from(
     new Set(transactionList.map((t) => t.category).filter(Boolean))
   );
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'Wallet':
       case 'Accounts':
         return (
-          <Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
             <SectionHeader
-              title="Accounts"
-              description="Manage your cash, bank, and e-wallet accounts."
+              title={t('sections.accountsTitle')}
+              description={t('sections.accountsDesc')}
+              action={
+                <Button size="sm" onClick={openAddAccount} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs">
+                  {t('sections.addAccount')}
+                </Button>
+              }
             />
-
             <AccountList
               accounts={accountList}
               transactions={transactionList}
@@ -625,74 +519,76 @@ function App() {
           </Card>
         );
 
-      case 'Portfolio':
-        return (
-          <Card>
-            <SectionHeader
-              title="Portfolio"
-              description="Current allocation across your assets."
-            />
-
-            <PortfolioList
-              assets={portfolioList}
-              onEdit={handleEditPortfolio}
-              onDelete={handleDeletePortfolio}
-            />
-          </Card>
-        );
-
+      case 'Transaction':
       case 'Transactions':
         return (
-          <Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
             <SectionHeader
-              title="Transactions"
-              description="Latest activity in your account."
+              title={t('sections.transactionsTitle')}
+              description={t('sections.transactionsDesc')}
+              action={
+                <Button size="sm" onClick={openAddTransaction} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs">
+                  {t('sections.addTransaction')}
+                </Button>
+              }
             />
-
             <TransactionList
               transactions={filteredTransactions}
               accounts={accountList}
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
-              emptyMessage={
-                transactionList.length === 0
-                  ? 'No transactions yet.'
-                  : 'No transactions match your search.'
-              }
-              emptyDescription={
-                transactionList.length === 0
-                  ? 'Add a transaction to start tracking your activity.'
-                  : 'Try a different title, category, type, or date.'
-              }
+              emptyMessage={t('common.noTransactions')}
+              emptyDescription={t('common.addTransactionPrompt')}
             />
           </Card>
         );
 
-      case 'Markets':
+      case 'Card':
         return (
-          <Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
             <SectionHeader
-              title="Markets"
-              description="Live market feed for Forex, Crypto & Indonesian Stocks (IHSG)."
+              title="Kartu & Rekening Pembayaran"
+              description="Kelola kartu debit, kartu kredit, dan akun dompet digital Anda"
+              action={
+                <Button size="sm" onClick={openAddAccount} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs">
+                  + Tambah Kartu / Rekening
+                </Button>
+              }
             />
-
-            <MarketList
-              assets={marketList}
-              onRefresh={handleRefreshMarkets}
-              isRefreshing={isSyncingMarkets}
-              lastSyncTime={marketLastSync}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {accountList.map((acc) => (
+                <div key={acc.id} className="p-5 rounded-2xl bg-gradient-to-br from-indigo-600 to-slate-800 text-white shadow-md relative overflow-hidden">
+                  <div className="flex justify-between items-center mb-8">
+                    <span className="text-xs uppercase tracking-wider font-semibold opacity-80">{acc.type}</span>
+                    <span className="text-sm font-extrabold tracking-tight">Finance Dashboard</span>
+                  </div>
+                  <p className="text-xs opacity-75">{acc.name}</p>
+                  <p className="text-2xl font-black tracking-tight mt-1">
+                    {formatRupiah(acc.openingBalance || 0)}
+                  </p>
+                  <div className="mt-4 flex justify-between items-center text-[11px] opacity-75">
+                    <span>•••• •••• •••• {acc.id.slice(-4) || '8821'}</span>
+                    <span>EXP 12/28</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
         );
 
+      case 'Wishlist':
       case 'Budgets':
         return (
-          <Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
             <SectionHeader
-              title="Budget Realization"
-              description="Monthly spending limits vs actual transaction expenses by category."
+              title={t('sections.budgetsTitle')}
+              description={t('sections.budgetsDesc')}
+              action={
+                <Button size="sm" onClick={openAddBudget} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs">
+                  {t('sections.addBudget')}
+                </Button>
+              }
             />
-
             <BudgetList
               budgets={budgetList}
               transactions={transactionList}
@@ -705,14 +601,170 @@ function App() {
           </Card>
         );
 
+      case 'Investment':
+      case 'Portfolio':
+        return (
+          <div className="space-y-6">
+            <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
+              <SectionHeader
+                title={t('sections.portfolioTitle')}
+                description={t('sections.portfolioDesc')}
+                action={
+                  <Button size="sm" onClick={openAddPortfolio} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs">
+                    {t('sections.addAsset')}
+                  </Button>
+                }
+              />
+              <PortfolioList
+                assets={portfolioList}
+                onEdit={handleEditPortfolio}
+                onDelete={handleDeletePortfolio}
+              />
+            </Card>
+
+            <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
+              <SectionHeader
+                title={t('sections.marketsTitle')}
+                description={t('sections.marketsDesc')}
+              />
+              <MarketList
+                assets={marketList}
+                onRefresh={handleRefreshMarkets}
+                isRefreshing={isSyncingMarkets}
+                lastSyncTime={marketLastSync}
+              />
+            </Card>
+          </div>
+        );
+
+      case 'Settings':
+        return (
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
+            <SectionHeader
+              title="Pengaturan & Konfigurasi Sistem"
+              description="Kelola otentikasi login email, tema terang/gelap, integrasi backend Supabase, bahasa, dan cadangan data"
+            />
+            <div className="mt-4 space-y-6 text-sm divide-y divide-slate-100 dark:divide-slate-800">
+              {/* Theme Section */}
+              <div className="pt-2 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white">Tema Tampilan (Terang / Gelap)</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Mode saat ini: <strong className="text-slate-800 dark:text-slate-200">{theme === 'dark' ? 'Mode Gelap (Dark)' : 'Mode Terang (Light)'}</strong>
+                  </p>
+                </div>
+                <Button variant="secondary" size="sm" onClick={toggleTheme} className="rounded-xl font-semibold flex items-center gap-2">
+                  <span>{theme === 'dark' ? '☀️ Ganti ke Mode Terang' : '🌙 Ganti ke Mode Gelap'}</span>
+                </Button>
+              </div>
+
+              {/* Auth Profile Section */}
+              <div className="pt-4 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white">Profil Pengguna & Autentikasi</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Aktif sebagai: <strong className="text-slate-800 dark:text-slate-200">{user?.name || 'Akun Demo'}</strong> ({user?.email || 'demo@financedashboard.app'})
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`inline-block h-2 w-2 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      {isSupabaseConfigured
+                        ? 'Backend: Live Supabase Auth Aktif'
+                        : 'Backend: Mode Akun Demo Lokal (Siap dihubungkan ke .env Supabase)'}
+                    </span>
+                  </div>
+                </div>
+                <Button size="sm" onClick={openAuthModal} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs">
+                  Kelola Akun
+                </Button>
+              </div>
+
+              {/* Language Section */}
+              <div className="pt-4 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white">Bahasa Antarmuka</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Saat ini: {lang === 'en' ? 'English (EN)' : 'Bahasa Indonesia (ID)'}
+                  </p>
+                </div>
+                <Button variant="secondary" size="sm" onClick={toggleLang} className="rounded-xl font-semibold">
+                  Ganti ke {lang === 'en' ? 'Bahasa Indonesia' : 'English'}
+                </Button>
+              </div>
+
+              {/* Simulation & Data Controls */}
+              <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white">Simulasi & Manajemen Data</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Mulai dari keadaan bersih (Rp 0) untuk penggunaan asli, atau muat data simulasi untuk mencoba antarmuka.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleLoadDemoData}
+                    className="rounded-xl font-semibold border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/50"
+                  >
+                    📥 Muat Data Demo
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleClearAllData}
+                    className="rounded-xl font-semibold"
+                  >
+                    🗑️ Kosongkan Data (Rp 0)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Data & Backup Section */}
+              <div className="pt-4 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white">Cadangan & Ekspor Data</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Ekspor seluruh transaksi, akun, dan portofolio ke format JSON atau CSV
+                  </p>
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => setIsBackupModalOpen(true)} className="rounded-xl font-semibold">
+                  Ekspor / Pulihkan Data
+                </Button>
+              </div>
+            </div>
+          </Card>
+        );
+
+      case 'Help':
+        return (
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
+            <SectionHeader
+              title="Panduan & Pusat Bantuan"
+              description="Pelajari cara mengoptimalkan seluruh fitur Finance Dashboard"
+            />
+            <div className="mt-4 space-y-4 text-xs text-slate-600 dark:text-slate-300">
+              <div className="p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200">
+                <h4 className="font-bold text-sm mb-1 text-indigo-900 dark:text-indigo-300">🚀 Kesiapan Publikasi & Login Email Supabase</h4>
+                <p className="leading-relaxed">
+                  Aplikasi ini dirancang modular dan siap dipublikasikan ke production. Untuk mengaktifkan login email live menggunakan Supabase Auth, cukup masukkan kredensial project Supabase Anda pada file <code>.env</code> (lihat panduan di <code>.env.example</code>). Sistem akan otomatis beralih dari Mode Demo ke backend Supabase nyata.
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white">💡 Navigasi Cepat Keyboard</h4>
+                <p>Gunakan kolom pencarian di sidebar atau tekan tombol pintas untuk langsung menyaring daftar mutasi dan portofolio.</p>
+              </div>
+            </div>
+          </Card>
+        );
+
       case 'Cashflow':
         return (
-          <Card>
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
             <SectionHeader
-              title="Cashflow Analytics"
-              description="Monthly income versus expenses comparison and category spending shifts."
+              title={t('sections.cashflowTitle')}
+              description={t('sections.cashflowDesc')}
             />
-
             <CashflowView
               transactions={transactionList}
               selectedMonth={selectedBudgetMonth}
@@ -721,175 +773,170 @@ function App() {
           </Card>
         );
 
+      case 'Dashboard':
       case 'Overview':
       default:
         return (
-          <>
-            <DashboardStats
-              transactions={transactionList}
-              portfolioValue={portfolioValue}
-              portfolioProfitLoss={portfolioProfitLoss}
-              portfolioProfitLossPercent={portfolioProfitLossPercent}
-              accounts={accountList}
-            />
-
-            <CashflowMiniCard
-              transactions={transactionList}
-              currentMonth={selectedBudgetMonth}
-              onNavigateToCashflow={() => setActiveTab('Cashflow')}
-            />
-
-            <BudgetOverviewCard
-              budgets={budgetList}
-              transactions={transactionList}
-              currentMonth={selectedBudgetMonth}
-              onNavigateToBudgets={() => setActiveTab('Budgets')}
-            />
-
-            <PortfolioAnalytics
-              analytics={portfolioAnalytics}
-            />
-
-            <PortfolioAllocation
-              allocation={portfolioAllocation}
-              isEmpty={portfolioList.length === 0}
-            />
-
-            <PortfolioQuality
-              quality={portfolioQuality}
-            />
-
-            <section className="grid gap-6 lg:grid-cols-2">
-              <Card>
-                <SectionHeader
-                  title="Portfolio Overview"
-                  description="Current allocation across your assets."
-                />
-
-                <PortfolioList
-                  assets={portfolioList}
-                  onEdit={handleEditPortfolio}
-                  onDelete={handleDeletePortfolio}
-                />
-              </Card>
-
-              <Card>
-                <SectionHeader
-                  title="Recent Transactions"
-                  description="Latest activity in your account."
-                />
-
-                <TransactionList
-                  transactions={filteredTransactions}
-                  accounts={accountList}
-                  onEdit={handleEditTransaction}
-                  onDelete={handleDeleteTransaction}
-                  emptyMessage={
-                    transactionList.length === 0
-                      ? 'No transactions yet.'
-                      : 'No transactions match your search.'
-                  }
-                  emptyDescription={
-                    transactionList.length === 0
-                      ? 'Add a transaction to see your latest activity here.'
-                      : 'Try a different title, category, type, or date.'
-                  }
-                />
-              </Card>
-            </section>
-
-            <QuickSearch
-              value={searchQuery}
-              activeQuery={activeSearchQuery}
-              onChange={setSearchQuery}
-              onSearch={handleSearch}
-              onClear={() => {
-                setSearchQuery('');
-                setActiveSearchQuery('');
-              }}
-            />
-          </>
+          <FazztrackOverview
+            transactions={transactionList}
+            accounts={accountList}
+            portfolioAssets={portfolioList}
+            onOpenTransactionModal={openAddTransaction}
+            onLoadDemoData={handleLoadDemoData}
+          />
         );
     }
   };
 
+  const displayName = user?.name || 'Akun Demo';
+  const initials = displayName
+    .split(' ')
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'AD';
+
   return (
-    <div className="min-h-screen bg-background text-text-primary">
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <h1 className="text-xl font-semibold">
-              Finance Dashboard
-            </h1>
-
-            <p className="text-xs text-text-muted">
-              Personal finance overview
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsBackupModalOpen(true)}
-            >
-              Export / Restore
-            </Button>
-
-            <Badge variant={marketLastSync ? 'positive' : 'default'}>
-              {marketLastSync ? '🟢 Live Market Active' : 'Simulated Data'}
-            </Badge>
-          </div>
-        </div>
-      </header>
-
-      <Navigation
+    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors">
+      {/* Modern Left Sidebar */}
+      <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        searchQuery={searchQuery}
+        onSearchChange={(query) => {
+          setSearchQuery(query);
+          setActiveSearchQuery(query);
+        }}
       />
 
-      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        <SectionHeader
-          title={activeTab}
-          description="Track your financial position and portfolio performance."
-          action={
-            activeTab === 'Portfolio' ? (
-              <Button
-                size="sm"
-                onClick={openAddPortfolio}
-              >
-                + Add Asset
-              </Button>
-            ) : activeTab === 'Accounts' ? (
-              <Button
-                size="sm"
-                onClick={openAddAccount}
-              >
-                + Add Account
-              </Button>
-            ) : activeTab === 'Budgets' ? (
-              <Button
-                size="sm"
-                onClick={openAddBudget}
-              >
-                + Add Budget
-              </Button>
-            ) : (
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header */}
+        <header className="h-16 px-8 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between sticky top-0 z-30 transition-colors">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-500">
+            <svg className="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            <span className="text-slate-900 dark:text-white">Dashboard</span>
+            <span>/</span>
+            <span className="text-slate-500 dark:text-slate-400">
+              {activeTab === 'Dashboard' ? 'Overview' : activeTab}
+            </span>
+          </div>
+
+          {/* Top Right Controls */}
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle (Terang / Gelap) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer flex items-center justify-center"
+              title={theme === 'dark' ? 'Ganti ke Mode Terang (Light)' : 'Ganti ke Mode Gelap (Dark)'}
+              aria-label={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+            >
+              {theme === 'dark' ? (
+                <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+
+            {/* Language switch */}
+            <button
+              type="button"
+              onClick={toggleLang}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition cursor-pointer"
+              title="Ganti Bahasa"
+            >
+              <span aria-hidden="true">🌐</span>
+              <span>{lang.toUpperCase()}</span>
+            </button>
+
+            {/* Notification Bell with indicator */}
+            <button
+              type="button"
+              className="relative p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
+              aria-label="Notifikasi"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500" />
+            </button>
+
+            {/* User Avatar & Status: Akun Demo */}
+            <button
+              type="button"
+              onClick={openAuthModal}
+              className="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden hover:ring-2 hover:ring-indigo-500/20 transition cursor-pointer flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold text-xs"
+              title="Kelola Akun"
+            >
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={displayName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </button>
+          </div>
+        </header>
+
+        {/* Main Body */}
+        <main className="flex-1 p-8 overflow-y-auto">
+          {/* Section Title */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                {activeTab === 'Dashboard' ? 'Overview' : activeTab}
+              </h1>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                {activeTab === 'Dashboard'
+                  ? 'Ringkasan posisi aset, arus kas, dan mutasi keuangan Anda secara realtime'
+                  : `Kelola ${activeTab.toLowerCase()} Anda`}
+              </p>
+            </div>
+
+            {/* Quick Action Button for non-dashboard tabs */}
+            {activeTab !== 'Dashboard' && (
               <Button
                 size="sm"
                 onClick={openAddTransaction}
+                className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs"
               >
-                + Add
+                + Tambah Transaksi
               </Button>
-            )
-          }
-        />
+            )}
+          </div>
 
-        {renderTabContent()}
+          {/* Render Active View */}
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24 text-xs text-slate-400">
+                {t('common.loading')}
+              </div>
+            }
+          >
+            {renderTabContent()}
+          </Suspense>
+        </main>
+      </div>
 
+      {/* Authentication Modal */}
+      <AuthModal />
 
-      </main>
-
+      {/* Modals */}
       <TransactionModal
         isOpen={isTransactionModalOpen}
         onClose={() => {
@@ -933,15 +980,19 @@ function App() {
         defaultMonth={selectedBudgetMonth}
       />
 
-      <BackupModal
-        isOpen={isBackupModalOpen}
-        onClose={() => setIsBackupModalOpen(false)}
-        accounts={accountList}
-        transactions={transactionList}
-        portfolio={portfolioList}
-        budgets={budgetList}
-        onRestore={handleRestoreBackup}
-      />
+      {isBackupModalOpen && (
+        <Suspense fallback={null}>
+          <BackupModal
+            isOpen={isBackupModalOpen}
+            onClose={() => setIsBackupModalOpen(false)}
+            accounts={accountList}
+            transactions={transactionList}
+            portfolio={portfolioList}
+            budgets={budgetList}
+            onRestore={handleRestoreBackup}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

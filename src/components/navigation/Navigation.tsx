@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface NavigationProps {
   activeTab: string;
@@ -19,6 +20,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  const { t } = useLanguage();
+
   return (
     <nav className="border-b border-border bg-surface">
       <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
@@ -33,7 +36,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 : 'border-transparent text-text-muted hover:text-text-primary'
             }`}
           >
-            {tab}
+            {t(`nav.${tab}`)}
           </button>
         ))}
       </div>

@@ -1,0 +1,186 @@
+import type { Account, PortfolioAsset, Transaction, Budget } from '../types/finance';
+
+const today = new Date();
+const y = today.getFullYear();
+const m = String(today.getMonth() + 1).padStart(2, '0');
+
+export const demoAccounts: Account[] = [
+  {
+    id: 'acc_bca_01',
+    name: 'BCA Tabungan Utama',
+    type: 'bank',
+    openingBalance: 25500000,
+    currency: 'IDR',
+    createdAt: `${y}-01-01`,
+  },
+  {
+    id: 'acc_mandiri_02',
+    name: 'Mandiri Payroll',
+    type: 'bank',
+    openingBalance: 12800000,
+    currency: 'IDR',
+    createdAt: `${y}-01-05`,
+  },
+  {
+    id: 'acc_gopay_03',
+    name: 'GoPay / OVO E-Wallet',
+    type: 'ewallet',
+    openingBalance: 1450000,
+    currency: 'IDR',
+    createdAt: `${y}-01-10`,
+  },
+  {
+    id: 'acc_cash_04',
+    name: 'Kas Tunai Dompet',
+    type: 'cash',
+    openingBalance: 2500000,
+    currency: 'IDR',
+    createdAt: `${y}-01-15`,
+  },
+];
+
+export const demoPortfolio: PortfolioAsset[] = [
+  {
+    id: 'asset_bbca',
+    name: 'Bank Central Asia (BBCA)',
+    symbol: 'BBCA.JK',
+    assetType: 'stock',
+    quantity: 2000,
+    averageBuyPrice: 9100,
+    currentPrice: 9850,
+    value: 19700000,
+    currency: 'IDR',
+  },
+  {
+    id: 'asset_bbri',
+    name: 'Bank Rakyat Indonesia (BBRI)',
+    symbol: 'BBRI.JK',
+    assetType: 'stock',
+    quantity: 2500,
+    averageBuyPrice: 4700,
+    currentPrice: 5100,
+    value: 12750000,
+    currency: 'IDR',
+  },
+  {
+    id: 'asset_rdpu',
+    name: 'Reksa Dana Pasar Uang',
+    symbol: 'RDPU',
+    assetType: 'stock',
+    quantity: 1,
+    averageBuyPrice: 8500000,
+    currentPrice: 8900000,
+    value: 8900000,
+    currency: 'IDR',
+  },
+  {
+    id: 'asset_btc',
+    name: 'Bitcoin (BTC)',
+    symbol: 'BTC/IDR',
+    assetType: 'crypto',
+    quantity: 0.008,
+    averageBuyPrice: 850000000,
+    currentPrice: 1050000000,
+    value: 8400000,
+    currency: 'IDR',
+  },
+];
+
+export const demoTransactions: Transaction[] = [
+  {
+    id: 'tx_01',
+    title: 'Gaji Pokok & Tunjangan',
+    amount: 18500000,
+    type: 'income',
+    category: 'Gaji',
+    date: `${y}-${m}-01`,
+    accountId: 'acc_bca_01',
+  },
+  {
+    id: 'tx_02',
+    title: 'Dividen Saham BBCA',
+    amount: 1250000,
+    type: 'income',
+    category: 'Investasi',
+    date: `${y}-${m}-05`,
+    accountId: 'acc_mandiri_02',
+  },
+  {
+    id: 'tx_03',
+    title: 'Sewa Tempat & Listrik PLN',
+    amount: 2400000,
+    type: 'expense',
+    category: 'Tagihan',
+    date: `${y}-${m}-08`,
+    accountId: 'acc_bca_01',
+  },
+  {
+    id: 'tx_04',
+    title: 'Belanja Bulanan Supermarket',
+    amount: 1850000,
+    type: 'expense',
+    category: 'Kebutuhan',
+    date: `${y}-${m}-12`,
+    accountId: 'acc_bca_01',
+  },
+  {
+    id: 'tx_05',
+    title: 'Langganan Internet & WiFi',
+    amount: 450000,
+    type: 'expense',
+    category: 'Tagihan',
+    date: `${y}-${m}-15`,
+    accountId: 'acc_gopay_03',
+  },
+  {
+    id: 'tx_06',
+    title: 'Makan & Cafe Pertemuan',
+    amount: 650000,
+    type: 'expense',
+    category: 'Hiburan',
+    date: `${y}-${m}-18`,
+    accountId: 'acc_cash_04',
+  },
+  {
+    id: 'tx_07',
+    title: 'Bensin & Transportasi',
+    amount: 320000,
+    type: 'expense',
+    category: 'Transportasi',
+    date: `${y}-${m}-20`,
+    accountId: 'acc_gopay_03',
+  },
+  {
+    id: 'tx_08',
+    title: 'Iuran Kesehatan BPJS',
+    amount: 300000,
+    type: 'expense',
+    category: 'Asuransi',
+    date: `${y}-${m}-22`,
+    accountId: 'acc_mandiri_02',
+  },
+];
+
+export const demoBudgets: Budget[] = [
+  {
+    id: 'bg_01',
+    category: 'Tagihan',
+    limit: 3500000,
+    month: `${y}-${m}`,
+    createdAt: `${y}-${m}-01`,
+  },
+  {
+    id: 'bg_02',
+    category: 'Kebutuhan',
+    limit: 3000000,
+    month: `${y}-${m}`,
+    createdAt: `${y}-${m}-01`,
+  },
+  {
+    id: 'bg_03',
+    category: 'Hiburan',
+    limit: 1500000,
+    month: `${y}-${m}`,
+    createdAt: `${y}-${m}-01`,
+  },
+];

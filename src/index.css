@@ -1,24 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "Inter", sans-serif;
 
-  --color-background: #121212;
-  --color-surface: #1E1E1E;
-  --color-surface-elevated: #2A2A2A;
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FFFFFF;
   
-  --color-border: #333333;
+  --color-border: #E2E8F0;
   
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+  
+  --color-positive: #10B981;
+  --color-negative: #F43F5E;
+  --color-warning: #F59E0B;
+  --color-premium: #4F46E5;
+  --color-focus: #4F46E5;
+}
+
+.dark {
+  --color-background: #0B0F19;
+  --color-surface: #111827;
+  --color-surface-elevated: #1F2937;
+  --color-border: #1F2937;
   --color-text-primary: #F9FAFB;
   --color-text-secondary: #94A3B8;
   --color-text-muted: #64748B;
-  
-  --color-positive: #10B981;
-  --color-negative: #EF4444;
-  --color-warning: #F59E0B;
-  --color-premium: #D97706;
-  --color-focus: #3B82F6;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -30,5 +43,6 @@
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
