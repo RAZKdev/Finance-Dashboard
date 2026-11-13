@@ -42,7 +42,6 @@
     background-color: var(--color-background);
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 }

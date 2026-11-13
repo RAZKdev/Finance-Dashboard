@@ -26,12 +26,10 @@ import type {
   PortfolioAsset,
   Transaction,
 } from './types/finance';
-import { Sidebar } from './components/navigation';
+import { Sidebar, Navigation } from './components/navigation';
 import { useLanguage } from './i18n/LanguageContext';
-import { useAuth } from './auth/AuthContext';
 import { useTheme } from './theme/ThemeContext';
 import { formatRupiah } from './utils/currency';
-import { AuthModal } from './components/auth/AuthModal';
 import {
   FazztrackOverview,
 } from './components/dashboard';
@@ -39,8 +37,6 @@ import {
   PortfolioList,
   PortfolioModal,
 } from './components/portfolio';
-import { transactions } from './data/transactions';
-import { portfolioAssets } from './data/portfolio';
 import { demoAccounts, demoBudgets, demoPortfolio, demoTransactions } from './data/demoData';
 import {
   createAccount,
@@ -85,9 +81,9 @@ const PORTFOLIO_STORAGE_KEY = 'finance-dashboard-portfolio-v1';
 const loadTransactions = (accountList: Account[]): Transaction[] => {
   try {
     const stored = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
-    if (!stored) return transactions;
+    if (!stored) return [];
     const parsed: unknown = JSON.parse(stored);
-    if (!Array.isArray(parsed)) return transactions;
+    if (!Array.isArray(parsed)) return [];
 
     const candidates = parsed.filter((item): item is Transaction => {
       if (!item || typeof item !== 'object') return false;
@@ -107,16 +103,16 @@ const loadTransactions = (accountList: Account[]): Transaction[] => {
       (transaction) => validateTransaction(transaction, accountList).valid
     );
   } catch {
-    return transactions;
+    return [];
   }
 };
 
 const loadPortfolio = (): PortfolioAsset[] => {
   try {
     const stored = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
-    if (!stored) return portfolioAssets;
+    if (!stored) return [];
     const parsed: unknown = JSON.parse(stored);
-    if (!Array.isArray(parsed)) return portfolioAssets;
+    if (!Array.isArray(parsed)) return [];
 
     const validAssets: PortfolioAsset[] = [];
     for (const item of parsed) {
@@ -181,13 +177,12 @@ const loadPortfolio = (): PortfolioAsset[] => {
 
     return validAssets;
   } catch {
-    return portfolioAssets;
+    return [];
   }
 };
 
 export function App() {
   const { t, lang, toggleLang } = useLanguage();
-  const { user, openAuthModal, isSupabaseConfigured } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -271,7 +266,7 @@ export function App() {
     try {
       localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactionList));
     } catch {
-      // Keep app usable
+      // Keep app usable on storage error
     }
   }, [transactionList]);
 
@@ -283,7 +278,7 @@ export function App() {
     try {
       localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(portfolioList));
     } catch {
-      // Keep app usable
+      // Keep app usable on storage error
     }
   }, [portfolioList]);
 
@@ -460,12 +455,16 @@ export function App() {
     setTransactionList(demoTransactions);
     try {
       localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(demoTransactions));
-    } catch {}
+    } catch {
+      // ignore storage error
+    }
 
     setPortfolioList(demoPortfolio);
     try {
       localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(demoPortfolio));
-    } catch {}
+    } catch {
+      // ignore storage error
+    }
 
     setBudgetList(demoBudgets);
     saveBudgets(demoBudgets);
@@ -479,12 +478,16 @@ export function App() {
       setTransactionList([]);
       try {
         localStorage.removeItem(TRANSACTIONS_STORAGE_KEY);
-      } catch {}
+      } catch {
+        // ignore storage error
+      }
 
       setPortfolioList([]);
       try {
         localStorage.removeItem(PORTFOLIO_STORAGE_KEY);
-      } catch {}
+      } catch {
+        // ignore storage error
+      }
 
       setBudgetList([]);
       saveBudgets([]);
@@ -637,12 +640,28 @@ export function App() {
           </div>
         );
 
+      case 'Markets':
+        return (
+          <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
+            <SectionHeader
+              title={t('sections.marketsTitle')}
+              description={t('sections.marketsDesc')}
+            />
+            <MarketList
+              assets={marketList}
+              onRefresh={handleRefreshMarkets}
+              isRefreshing={isSyncingMarkets}
+              lastSyncTime={marketLastSync}
+            />
+          </Card>
+        );
+
       case 'Settings':
         return (
           <Card className="border border-slate-100 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl">
             <SectionHeader
               title="Pengaturan & Konfigurasi Sistem"
-              description="Kelola otentikasi login email, tema terang/gelap, integrasi backend Supabase, bahasa, dan cadangan data"
+              description="Kelola tema terang/gelap, preferensi bahasa, manajemen data lokal, dan cadangan data"
             />
             <div className="mt-4 space-y-6 text-sm divide-y divide-slate-100 dark:divide-slate-800">
               {/* Theme Section */}
@@ -655,27 +674,6 @@ export function App() {
                 </div>
                 <Button variant="secondary" size="sm" onClick={toggleTheme} className="rounded-xl font-semibold flex items-center gap-2">
                   <span>{theme === 'dark' ? '☀️ Ganti ke Mode Terang' : '🌙 Ganti ke Mode Gelap'}</span>
-                </Button>
-              </div>
-
-              {/* Auth Profile Section */}
-              <div className="pt-4 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">Profil Pengguna & Autentikasi</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Aktif sebagai: <strong className="text-slate-800 dark:text-slate-200">{user?.name || 'Akun Demo'}</strong> ({user?.email || 'demo@financedashboard.app'})
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className={`inline-block h-2 w-2 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                    <span className="text-xs text-slate-600 dark:text-slate-400">
-                      {isSupabaseConfigured
-                        ? 'Backend: Live Supabase Auth Aktif'
-                        : 'Backend: Mode Akun Demo Lokal (Siap dihubungkan ke .env Supabase)'}
-                    </span>
-                  </div>
-                </div>
-                <Button size="sm" onClick={openAuthModal} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-xs">
-                  Kelola Akun
                 </Button>
               </div>
 
@@ -745,9 +743,9 @@ export function App() {
             />
             <div className="mt-4 space-y-4 text-xs text-slate-600 dark:text-slate-300">
               <div className="p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200">
-                <h4 className="font-bold text-sm mb-1 text-indigo-900 dark:text-indigo-300">🚀 Kesiapan Publikasi & Login Email Supabase</h4>
+                <h4 className="font-bold text-sm mb-1 text-indigo-900 dark:text-indigo-300">🛡️ Penyimpanan Lokal & Privasi Penuh</h4>
                 <p className="leading-relaxed">
-                  Aplikasi ini dirancang modular dan siap dipublikasikan ke production. Untuk mengaktifkan login email live menggunakan Supabase Auth, cukup masukkan kredensial project Supabase Anda pada file <code>.env</code> (lihat panduan di <code>.env.example</code>). Sistem akan otomatis beralih dari Mode Demo ke backend Supabase nyata.
+                  Seluruh data keuangan, rekening, anggaran, dan portofolio Anda disimpan secara aman langsung di penyimpanan lokal perangkat (localStorage browser). Tidak ada rekaman transaksi atau kekayaan pribadi yang dikirimkan ke server pihak ketiga. Gunakan fitur Ekspor / Pulihkan untuk mencadangkan data secara mandiri.
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
@@ -788,18 +786,9 @@ export function App() {
     }
   };
 
-  const displayName = user?.name || 'Akun Demo';
-  const initials = displayName
-    .split(' ')
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'AD';
-
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors">
-      {/* Modern Left Sidebar */}
+      {/* Modern Left Sidebar - Hidden on mobile (<768px) */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -813,7 +802,7 @@ export function App() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="h-16 px-8 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between sticky top-0 z-30 transition-colors">
+        <header className="h-16 px-4 md:px-8 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between sticky top-0 z-30 transition-colors">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-500">
             <svg className="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -830,7 +819,18 @@ export function App() {
           </div>
 
           {/* Top Right Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Export / Restore Button */}
+            <button
+              type="button"
+              onClick={() => setIsBackupModalOpen(true)}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition cursor-pointer"
+              title="Ekspor / Pulihkan Data"
+            >
+              <span aria-hidden="true">💾</span>
+              <span className="hidden sm:inline">{t('header.exportRestore')}</span>
+            </button>
+
             {/* Theme Toggle (Terang / Gelap) */}
             <button
               type="button"
@@ -860,41 +860,32 @@ export function App() {
               <span aria-hidden="true">🌐</span>
               <span>{lang.toUpperCase()}</span>
             </button>
-
-            {/* Notification Bell with indicator */}
-            <button
-              type="button"
-              className="relative p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
-              aria-label="Notifikasi"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500" />
-            </button>
-
-            {/* User Avatar & Status: Akun Demo */}
-            <button
-              type="button"
-              onClick={openAuthModal}
-              className="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden hover:ring-2 hover:ring-indigo-500/20 transition cursor-pointer flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold text-xs"
-              title="Kelola Akun"
-            >
-              {user?.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt={displayName}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span>{initials}</span>
-              )}
-            </button>
           </div>
         </header>
 
+        {/* Mobile Horizontal Navigation Tabs (Hidden on desktop md:hidden) */}
+        <div className="md:hidden">
+          <Navigation
+            activeTab={
+              activeTab === 'Dashboard' ? 'Overview' :
+              activeTab === 'Wallet' ? 'Accounts' :
+              activeTab === 'Transaction' ? 'Transactions' :
+              activeTab === 'Wishlist' ? 'Budgets' :
+              activeTab === 'Investment' ? 'Portfolio' :
+              activeTab
+            }
+            onTabChange={(tab) => {
+              if (tab === 'Backup') {
+                setIsBackupModalOpen(true);
+              } else {
+                setActiveTab(tab);
+              }
+            }}
+          />
+        </div>
+
         {/* Main Body */}
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           {/* Section Title */}
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -909,7 +900,7 @@ export function App() {
             </div>
 
             {/* Quick Action Button for non-dashboard tabs */}
-            {activeTab !== 'Dashboard' && (
+            {activeTab !== 'Dashboard' && activeTab !== 'Settings' && activeTab !== 'Help' && (
               <Button
                 size="sm"
                 onClick={openAddTransaction}
@@ -932,9 +923,6 @@ export function App() {
           </Suspense>
         </main>
       </div>
-
-      {/* Authentication Modal */}
-      <AuthModal />
 
       {/* Modals */}
       <TransactionModal

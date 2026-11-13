@@ -116,7 +116,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({
               event.target.value as AccountType
             )
           }
-          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-focus"
+          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-base md:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-focus"
         >
           {ACCOUNT_TYPES.map((accountType) => (
             <option

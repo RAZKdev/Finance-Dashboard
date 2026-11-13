@@ -25,6 +25,7 @@ export const translations = {
       Investment: "Investment",
       Settings: "Settings",
       Help: "Help",
+      Backup: "Backup",
     },
     sections: {
       trackPosition: "Track your financial position and portfolio performance.",
@@ -85,6 +86,7 @@ export const translations = {
       Investment: "Investasi",
       Settings: "Pengaturan",
       Help: "Bantuan",
+      Backup: "Cadangan",
     },
     sections: {
       trackPosition: "Pantau posisi keuangan dan kinerja portofolio Anda.",

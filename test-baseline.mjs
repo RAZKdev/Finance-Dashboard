@@ -847,6 +847,17 @@ test('CSV serialization and domain exporters - escaping and header formatting', 
   assert.equal(escapeCSVValue(12345), '12345');
   assert.equal(escapeCSVValue(null), '');
 
+  // Test CSV formula injection sanitization (Master Prompt Section 4 Item 10)
+  assert.equal(escapeCSVValue('=HYPERLINK("http://evil.com")'), '"\'=HYPERLINK(""http://evil.com"")"');
+  assert.equal(escapeCSVValue('+1234'), "'+1234");
+  assert.equal(escapeCSVValue('-500000'), "'-500000");
+  assert.equal(escapeCSVValue('@admin'), "'@admin");
+  assert.equal(escapeCSVValue('\tsecret'), "'\tsecret");
+  assert.equal(escapeCSVValue('\rpayload'), '"\'\rpayload"');
+  // Numbers must not be prefixed with apostrophe (e.g. negative numbers remain numeric)
+  assert.equal(escapeCSVValue(-500000), '-500000');
+  assert.equal(escapeCSVValue(-12.34), '-12.34');
+
   // Test transactions CSV exporter
   const accounts = [
     { id: 'acc-1', name: 'Main Bank', type: 'bank', openingBalance: 0, currency: 'IDR', createdAt: '2026-01-01' },

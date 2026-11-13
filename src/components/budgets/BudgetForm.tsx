@@ -112,7 +112,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({
           type="month"
           value={month}
           onChange={(event) => setMonth(event.target.value)}
-          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-focus"
+          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-base md:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-focus"
         />
       </label>
 

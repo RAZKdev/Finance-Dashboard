@@ -576,7 +576,7 @@ export const FazztrackOverview: React.FC<OverviewDashboardProps> = ({
               </button>
             </div>
           ) : (
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[550px]">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-semibold">
                   <th className="pb-3 pt-2 font-medium">Transaksi / Item ⇅</th>

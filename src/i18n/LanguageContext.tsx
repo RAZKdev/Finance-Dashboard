@@ -49,8 +49,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback(
     (keyPath: string, params: Record<string, string | number> = {}): string => {
       const keys = keyPath.split('.');
-      const resolve = (obj: any) =>
-        keys.reduce((acc, k) => (acc && acc[k] !== undefined ? acc[k] : undefined), obj);
+      const resolve = (obj: unknown) =>
+        keys.reduce<unknown>(
+          (acc, k) =>
+            acc && typeof acc === 'object' && k in acc
+              ? (acc as Record<string, unknown>)[k]
+              : undefined,
+          obj
+        );
 
       let val = resolve(translations[lang]);
 

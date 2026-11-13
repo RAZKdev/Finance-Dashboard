@@ -153,7 +153,7 @@ export const PortfolioForm: React.FC<PortfolioFormProps> = ({
               >
             )
           }
-          className="w-full bg-surface text-text-primary px-3.5 py-2.5 rounded-lg border border-border text-sm"
+          className="w-full bg-surface text-text-primary px-3.5 py-2.5 rounded-lg border border-border text-base md:text-sm"
         >
           <option value="stock">Stock</option>
           <option value="crypto">Crypto</option>

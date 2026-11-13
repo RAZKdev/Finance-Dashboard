@@ -214,7 +214,17 @@ export function escapeCSVValue(val: unknown): string {
     return '';
   }
 
-  const str = String(val);
+  let str: string;
+  if (typeof val === 'string') {
+    str = val;
+    const dangerousPrefixes = ['=', '+', '-', '@', '\t', '\r'];
+    if (dangerousPrefixes.some((prefix) => str.startsWith(prefix))) {
+      str = `'${str}`;
+    }
+  } else {
+    str = String(val);
+  }
+
   if (
     str.includes(',') ||
     str.includes('"') ||

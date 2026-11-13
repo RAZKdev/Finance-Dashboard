@@ -142,7 +142,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           onChange={(event) =>
             setAccountId(event.target.value)
           }
-          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-focus"
+          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-base md:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-focus"
         >
           <option value="">
             No account

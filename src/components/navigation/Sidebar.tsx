@@ -1,5 +1,4 @@
 import React from 'react';
-import { useAuth } from '../../auth/AuthContext';
 
 export interface SidebarProps {
   activeTab: string;
@@ -14,8 +13,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
-  const { user, logout, openAuthModal } = useAuth();
-
   const mainNav = [
     {
       id: 'Dashboard',
@@ -77,18 +74,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  const displayName = user?.name || 'Akun Demo';
-  const displayEmail = user?.email || 'demo@financedashboard.app';
-  const initials = displayName
-    .split(' ')
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'AD';
-
   return (
-    <aside className="w-64 shrink-0 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between min-h-screen p-5 select-none transition-colors">
+    <aside className="hidden md:flex w-64 shrink-0 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col justify-between min-h-screen p-5 select-none transition-colors">
       <div>
         {/* Brand Header */}
         <div className="flex items-center gap-3 px-2 py-1 mb-6">
@@ -189,51 +176,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </svg>
             <span>Help</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (user) {
-                void logout();
-                openAuthModal();
-              } else {
-                openAuthModal();
-              }
-            }}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
-          >
-            <svg className="w-4 h-4 text-rose-500 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span>{user ? 'Log out' : 'Sign in'}</span>
-          </button>
         </div>
 
-        {/* User Card: Akun Demo */}
-        <div
-          onClick={openAuthModal}
-          className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
-          title="Kelola akun atau ganti pengguna"
-        >
-          {user?.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={displayName}
-              className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-            />
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold text-xs border border-indigo-200 dark:border-indigo-800">
-              {initials}
-            </div>
-          )}
-          <div className="overflow-hidden">
-            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-              {displayName}
-            </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
-              {displayEmail}
-            </p>
-          </div>
+        {/* Local Storage Indicator */}
+        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            Lokal / Offline-First
+          </span>
         </div>
       </div>
     </aside>

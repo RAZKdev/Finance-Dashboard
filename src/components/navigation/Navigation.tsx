@@ -9,11 +9,13 @@ interface NavigationProps {
 const tabs = [
   'Overview',
   'Accounts',
-  'Portfolio',
-  'Markets',
   'Transactions',
   'Budgets',
   'Cashflow',
+  'Portfolio',
+  'Markets',
+  'Settings',
+  'Backup',
 ];
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -30,7 +32,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             key={tab}
             type="button"
             onClick={() => onTabChange(tab)}
-            className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+            className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors cursor-pointer ${
               activeTab === tab
                 ? 'border-premium text-text-primary'
                 : 'border-transparent text-text-muted hover:text-text-primary'
