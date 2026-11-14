@@ -67,7 +67,7 @@ npm install
 npm run dev
 ```
 
-Buka `http://localhost:5173/Finance-Dashboard/` (Vite memakai `base: '/Finance-Dashboard/'`).
+Buka `http://localhost:5173/` (Vite memakai `base: '/'`).
 
 Di Windows, `start.bat` juga tersedia.
 
