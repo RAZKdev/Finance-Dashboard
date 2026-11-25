@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportHeight="108"
+    android:viewportWidth="108">
+  <!-- F glyph (solid emerald, no gradient needed on adaptive icon foreground) -->
+  <path
+      android:fillColor="#34D399"
+      android:pathData="M38,34 L38,74 L46,74 L46,62 L58,62 L58,54 L46,54 L46,42 L60,42 L60,34 Z"/>
+  <!-- S-curve of $ -->
+  <path
+      android:fillColor="#00000000"
+      android:strokeColor="#059669"
+      android:strokeWidth="5"
+      android:strokeLineCap="round"
+      android:pathData="M62,54 C62,47 70,45 75,47 C80,49 80,55 75,57 C70,59 64,60 62,63 C60,66 66,69 72,69 C78,69 82,66 82,61"/>
+  <!-- $ vertical bar -->
+  <path
+      android:fillColor="#00000000"
+      android:strokeColor="#059669"
+      android:strokeWidth="5"
+      android:strokeLineCap="round"
+      android:pathData="M72,36 L72,74"/>
+</vector>
