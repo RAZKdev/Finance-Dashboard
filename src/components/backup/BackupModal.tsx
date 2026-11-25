@@ -9,7 +9,6 @@ import type {
 } from '../../types/finance';
 import {
   createBackupPayload,
-  downloadFile,
   exportAccountsToCSV,
   exportBudgetsToCSV,
   exportPortfolioToCSV,
@@ -18,6 +17,10 @@ import {
   validateBackupPayload,
   type BackupValidationResult,
 } from '../../utils/backup';
+import {
+  saveExportFile,
+  type SaveExportResult,
+} from '../../utils/saveExport';
 
 interface BackupModalProps {
   isOpen: boolean;
@@ -45,7 +48,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [restoreMode, setRestoreMode] = useState<'replace' | 'merge'>('replace');
   const [statusMessage, setStatusMessage] = useState<{
     text: string;
-    type: 'success' | 'error';
+    type: 'success' | 'warning' | 'error';
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,77 +87,109 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  // Full JSON export
-  const handleExportJSON = () => {
-    const payload = createBackupPayload(
-      accounts,
-      transactions,
-      portfolio,
-      budgets
-    );
-    const jsonStr = JSON.stringify(payload, null, 2);
-    downloadFile(
-      jsonStr,
-      `finance-dashboard-backup-${todayStr}.json`,
-      'application/json;charset=utf-8'
-    );
+  const reportExportResult = (result: SaveExportResult, fallbackText: string) => {
+    if (result.savedTo) {
+      setStatusMessage({
+        text: `Tersimpan di ${result.savedTo}. Buka Files > Downloads untuk menyalin.`,
+        type: 'success',
+      });
+      return;
+    }
+
+    if (result.usedShareFallback) {
+      setStatusMessage({
+        text: 'Tidak bisa menyimpan langsung ke Downloads. File dibuka di menu berbagi; pilih aplikasi penyimpanan yang tersedia.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    setStatusMessage({ text: fallbackText, type: 'success' });
+  };
+
+  const reportExportError = (error: unknown) => {
     setStatusMessage({
-      text: 'Full JSON backup downloaded successfully.',
-      type: 'success',
+      text: error instanceof Error ? error.message : 'Export failed.',
+      type: 'error',
     });
+  };
+
+  // Full JSON export
+  const handleExportJSON = async () => {
+    try {
+      const payload = createBackupPayload(
+        accounts,
+        transactions,
+        portfolio,
+        budgets
+      );
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const result = await saveExportFile(
+        jsonStr,
+        `finance-dashboard-backup-${todayStr}.json`,
+        'application/json;charset=utf-8'
+      );
+      reportExportResult(result, 'Full JSON backup downloaded successfully.');
+    } catch (error) {
+      reportExportError(error);
+    }
   };
 
   // CSV exports
-  const handleExportTransactionsCSV = () => {
-    const csv = exportTransactionsToCSV(transactions, accounts);
-    downloadFile(
-      csv,
-      `transactions-${todayStr}.csv`,
-      'text/csv;charset=utf-8'
-    );
-    setStatusMessage({
-      text: 'Transactions CSV downloaded successfully.',
-      type: 'success',
-    });
+  const handleExportTransactionsCSV = async () => {
+    try {
+      const csv = exportTransactionsToCSV(transactions, accounts);
+      const result = await saveExportFile(
+        csv,
+        `transactions-${todayStr}.csv`,
+        'text/csv;charset=utf-8'
+      );
+      reportExportResult(result, 'Transactions CSV downloaded successfully.');
+    } catch (error) {
+      reportExportError(error);
+    }
   };
 
-  const handleExportAccountsCSV = () => {
-    const csv = exportAccountsToCSV(accounts);
-    downloadFile(
-      csv,
-      `accounts-${todayStr}.csv`,
-      'text/csv;charset=utf-8'
-    );
-    setStatusMessage({
-      text: 'Accounts CSV downloaded successfully.',
-      type: 'success',
-    });
+  const handleExportAccountsCSV = async () => {
+    try {
+      const csv = exportAccountsToCSV(accounts);
+      const result = await saveExportFile(
+        csv,
+        `accounts-${todayStr}.csv`,
+        'text/csv;charset=utf-8'
+      );
+      reportExportResult(result, 'Accounts CSV downloaded successfully.');
+    } catch (error) {
+      reportExportError(error);
+    }
   };
 
-  const handleExportPortfolioCSV = () => {
-    const csv = exportPortfolioToCSV(portfolio);
-    downloadFile(
-      csv,
-      `portfolio-${todayStr}.csv`,
-      'text/csv;charset=utf-8'
-    );
-    setStatusMessage({
-      text: 'Portfolio CSV downloaded successfully.',
-      type: 'success',
-    });
+  const handleExportPortfolioCSV = async () => {
+    try {
+      const csv = exportPortfolioToCSV(portfolio);
+      const result = await saveExportFile(
+        csv,
+        `portfolio-${todayStr}.csv`,
+        'text/csv;charset=utf-8'
+      );
+      reportExportResult(result, 'Portfolio CSV downloaded successfully.');
+    } catch (error) {
+      reportExportError(error);
+    }
   };
 
-  const handleExportBudgetsCSV = () => {
-    const csv = exportBudgetsToCSV(budgets);
-    downloadFile(
-      csv,
-      `budgets-${todayStr}.csv`,
-      'text/csv;charset=utf-8'
-    );
-    setStatusMessage({
-      text: 'Budgets CSV downloaded successfully.',
-      type: 'success',
-    });
+  const handleExportBudgetsCSV = async () => {
+    try {
+      const csv = exportBudgetsToCSV(budgets);
+      const result = await saveExportFile(
+        csv,
+        `budgets-${todayStr}.csv`,
+        'text/csv;charset=utf-8'
+      );
+      reportExportResult(result, 'Budgets CSV downloaded successfully.');
+    } catch (error) {
+      reportExportError(error);
+    }
   };
 
   // File selection for restore
@@ -300,7 +335,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             className={`mt-4 rounded-lg p-3 text-xs font-medium ${
               statusMessage.type === 'success'
                 ? 'bg-positive/10 text-positive border border-positive/20'
-                : 'bg-negative/10 text-negative border border-negative/20'
+                : statusMessage.type === 'warning'
+                  ? 'bg-warning/10 text-warning border border-warning/20'
+                  : 'bg-negative/10 text-negative border border-negative/20'
             }`}
           >
             {statusMessage.text}
